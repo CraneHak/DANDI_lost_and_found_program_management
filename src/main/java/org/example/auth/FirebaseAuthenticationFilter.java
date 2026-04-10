@@ -1,8 +1,4 @@
 package org.example.auth;
-
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseAuthException;
-import com.google.firebase.auth.FirebaseToken;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,9 +19,14 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
     private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
     private final FirebaseProperties firebaseProperties;
+    private final FirebaseTokenVerifier firebaseTokenVerifier;
 
-    public FirebaseAuthenticationFilter(FirebaseProperties firebaseProperties) {
+    public FirebaseAuthenticationFilter(
+            FirebaseProperties firebaseProperties,
+            FirebaseTokenVerifier firebaseTokenVerifier
+    ) {
         this.firebaseProperties = firebaseProperties;
+        this.firebaseTokenVerifier = firebaseTokenVerifier;
     }
 
     @Override
@@ -47,9 +48,9 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try {
-            FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
-            String email = decodedToken.getEmail();
-            if (email == null || !decodedToken.isEmailVerified()) {
+            DecodedFirebaseUser decodedUser = firebaseTokenVerifier.verify(idToken);
+            String email = decodedUser.email();
+            if (email == null || !decodedUser.emailVerified()) {
                 writeError(response, HttpStatus.FORBIDDEN, "Verified email is required.");
                 return;
             }
@@ -61,10 +62,10 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
             }
 
             FirebaseAuthenticationToken authentication =
-                    new FirebaseAuthenticationToken(decodedToken.getUid(), email);
+                    new FirebaseAuthenticationToken(decodedUser.uid(), email);
             SecurityContextHolder.getContext().setAuthentication(authentication);
             filterChain.doFilter(request, response);
-        } catch (FirebaseAuthException ex) {
+        } catch (InvalidFirebaseTokenException ex) {
             writeError(response, HttpStatus.UNAUTHORIZED, "Invalid Firebase ID token.");
         } finally {
             SecurityContextHolder.clearContext();
@@ -73,7 +74,7 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getServletPath();
+        String path = request.getRequestURI();
         if (!PATH_MATCHER.match("/api/**", path)) {
             return true;
         }
