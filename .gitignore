@@ -38,3 +38,13 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Secrets ###
+.env
+.env.*
+!.env.example
+secrets/
+.secrets/
+*.pem
+*service-account*.json
+*firebase*.json
