@@ -38,3 +38,11 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+### Crawler secrets ###
+crawler/.env
+
+### Crawler debug screenshots ###
+crawler/*.png
+
+### Local Gradle config (each developer manages their own) ###
+gradle.properties
