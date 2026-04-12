@@ -38,3 +38,12 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Crawler secrets ###
+crawler/.env
+
+### Spring Boot prod config (contains DB credentials) ###
+src/main/resources/application-prod.properties
+
+### Local Gradle config (each developer manages their own) ###
+gradle.properties
