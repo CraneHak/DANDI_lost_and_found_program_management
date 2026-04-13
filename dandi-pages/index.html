@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>단디(DANDI) - 단국대학교 스마트 분실물 플랫폼</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            dku: { blue: '#0055A6', light: '#e0f2fe', hover: '#004080' }
+          },
+          fontFamily: { sans: ['"Noto Sans KR"', 'sans-serif'] }
+        }
+      }
+    };
+  </script>
+  <style>
+    html { scroll-behavior: smooth; }
+    .hero-gradient {
+      background: linear-gradient(135deg, #0055A6 0%, #0077cc 60%, #00a8e8 100%);
+    }
+    .feature-card:hover {
+      transform: translateY(-4px);
+    }
+    .feature-card {
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .fade-in {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .fade-in.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body class="font-sans bg-white text-slate-800">
+
+  <!-- 네비게이션 -->
+  <nav class="fixed top-0 left-0 right-0 bg-white/90 backdrop-blur border-b border-slate-100 z-50 shadow-sm">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-magnifying-glass text-dku-blue text-xl"></i>
+        <span class="font-black text-xl text-dku-blue tracking-tight">단디<span class="text-sm font-medium text-slate-400 ml-1">DANDI</span></span>
+      </div>
+      <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+        <a href="#features" class="hover:text-dku-blue transition-colors">주요 기능</a>
+        <a href="#how" class="hover:text-dku-blue transition-colors">사용 방법</a>
+        <a href="#faq" class="hover:text-dku-blue transition-colors">FAQ</a>
+      </div>
+      <a href="./dandi-pages/login.html" class="bg-dku-blue text-white text-sm font-bold px-5 py-2 rounded-full hover:bg-dku-hover transition-colors">
+        시작하기
+      </a>
+    </div>
+  </nav>
+
+  <!-- 히어로 섹션 -->
+  <section class="hero-gradient text-white pt-32 pb-24 px-6">
+    <div class="max-w-4xl mx-auto text-center">
+      <div class="inline-flex items-center gap-2 bg-white/20 backdrop-blur px-4 py-1.5 rounded-full text-sm font-medium mb-6">
+        <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+        단국대학교 재학생 전용 서비스
+      </div>
+      <h1 class="text-5xl md:text-6xl font-black leading-tight mb-6 tracking-tight">
+        잃어버린 물건,<br>
+        <span class="text-blue-200">단디</span>가 찾아드려요
+      </h1>
+      <p class="text-lg md:text-xl text-blue-100 mb-10 max-w-2xl mx-auto leading-relaxed">
+        단국대학교 캠퍼스 내 분실물을 실시간으로 확인하고,<br>
+        AI 안내와 위치 기반 지도로 빠르게 되찾으세요.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="./dandi-pages/login.html" class="bg-white text-dku-blue font-bold text-base px-8 py-4 rounded-2xl hover:bg-blue-50 transition-colors shadow-lg">
+          <i class="fa-solid fa-magnifying-glass mr-2"></i>분실물 찾기
+        </a>
+        <a href="./dandi-pages/admin-register.html" class="bg-white/20 backdrop-blur text-white font-bold text-base px-8 py-4 rounded-2xl hover:bg-white/30 transition-colors border border-white/30">
+          <i class="fa-solid fa-camera mr-2"></i>습득물 등록하기
+        </a>
+      </div>
+    </div>
+
+    <!-- 통계 배지 -->
+    <div class="max-w-3xl mx-auto mt-16 grid grid-cols-3 gap-4 text-center">
+      <div class="bg-white/15 backdrop-blur rounded-2xl p-5">
+        <p class="text-3xl font-black">실시간</p>
+        <p class="text-blue-200 text-sm mt-1">습득물 업데이트</p>
+      </div>
+      <div class="bg-white/15 backdrop-blur rounded-2xl p-5">
+        <p class="text-3xl font-black">AI</p>
+        <p class="text-blue-200 text-sm mt-1">수령 안내 제공</p>
+      </div>
+      <div class="bg-white/15 backdrop-blur rounded-2xl p-5">
+        <p class="text-3xl font-black">지도</p>
+        <p class="text-blue-200 text-sm mt-1">관리실 위치 안내</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 주요 기능 섹션 -->
+  <section id="features" class="py-24 px-6 bg-slate-50">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16 fade-in">
+        <p class="text-dku-blue font-semibold text-sm uppercase tracking-widest mb-2">Features</p>
+        <h2 class="text-3xl md:text-4xl font-black">단디의 주요 기능</h2>
+        <p class="text-slate-500 mt-3 max-w-xl mx-auto">분실물 찾기의 모든 과정을 더 쉽고 빠르게</p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-6">
+        <!-- 기능 1 -->
+        <div class="feature-card bg-white rounded-3xl p-8 shadow-sm border border-slate-100 fade-in">
+          <div class="w-14 h-14 bg-dku-light rounded-2xl flex items-center justify-center mb-5">
+            <i class="fa-solid fa-magnifying-glass text-2xl text-dku-blue"></i>
+          </div>
+          <h3 class="text-xl font-bold mb-3">실시간 습득물 조회</h3>
+          <p class="text-slate-500 text-sm leading-relaxed">
+            캠퍼스 곳곳에서 발견된 습득물을 카테고리·건물별로 실시간 확인하세요. 내 물건과 일치하는 아이템을 빠르게 찾을 수 있습니다.
+          </p>
+          <ul class="mt-4 space-y-2 text-sm text-slate-600">
+            <li><i class="fa-solid fa-check text-dku-blue mr-2"></i>카테고리별 필터링</li>
+            <li><i class="fa-solid fa-check text-dku-blue mr-2"></i>건물별 분류</li>
+            <li><i class="fa-solid fa-check text-dku-blue mr-2"></i>키워드 검색</li>
+          </ul>
+        </div>
+
+        <!-- 기능 2 -->
+        <div class="feature-card bg-dku-blue text-white rounded-3xl p-8 shadow-sm fade-in">
+          <div class="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center mb-5">
+            <i class="fa-solid fa-wand-magic-sparkles text-2xl text-white"></i>
+          </div>
+          <h3 class="text-xl font-bold mb-3">AI 수령 안내</h3>
+          <p class="text-blue-100 text-sm leading-relaxed">
+            생성형 AI가 물품 정보를 분석해 수령 시 필요한 준비물과 주의사항을 자동으로 안내합니다.
+          </p>
+          <ul class="mt-4 space-y-2 text-sm text-blue-100">
+            <li><i class="fa-solid fa-check mr-2"></i>물품별 맞춤 안내</li>
+            <li><i class="fa-solid fa-check mr-2"></i>수령 절차 요약</li>
+            <li><i class="fa-solid fa-check mr-2"></i>증명 서류 안내</li>
+          </ul>
+        </div>
+
+        <!-- 기능 3 -->
+        <div class="feature-card bg-white rounded-3xl p-8 shadow-sm border border-slate-100 fade-in">
+          <div class="w-14 h-14 bg-dku-light rounded-2xl flex items-center justify-center mb-5">
+            <i class="fa-solid fa-map-location-dot text-2xl text-dku-blue"></i>
+          </div>
+          <h3 class="text-xl font-bold mb-3">관리실 위치 안내</h3>
+          <p class="text-slate-500 text-sm leading-relaxed">
+            캠퍼스 지도에서 가장 가까운 분실물 관리실 위치와 연락처를 바로 확인하세요.
+          </p>
+          <ul class="mt-4 space-y-2 text-sm text-slate-600">
+            <li><i class="fa-solid fa-check text-dku-blue mr-2"></i>인터랙티브 캠퍼스 지도</li>
+            <li><i class="fa-solid fa-check text-dku-blue mr-2"></i>관리실 전화번호 안내</li>
+            <li><i class="fa-solid fa-check text-dku-blue mr-2"></i>분실물 현황판 위치</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 사용 방법 섹션 -->
+  <section id="how" class="py-24 px-6 bg-white">
+    <div class="max-w-5xl mx-auto">
+      <div class="text-center mb-16 fade-in">
+        <p class="text-dku-blue font-semibold text-sm uppercase tracking-widest mb-2">How it works</p>
+        <h2 class="text-3xl md:text-4xl font-black">3단계로 끝내는 분실물 찾기</h2>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-8">
+        <div class="text-center fade-in">
+          <div class="w-16 h-16 bg-dku-light rounded-full flex items-center justify-center mx-auto mb-4 text-dku-blue font-black text-2xl">1</div>
+          <div class="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <i class="fa-solid fa-right-to-bracket text-2xl text-slate-600"></i>
+          </div>
+          <h3 class="font-bold text-lg mb-2">로그인</h3>
+          <p class="text-slate-500 text-sm">단국대 이메일(@dankook.ac.kr)로 간단하게 가입하고 로그인하세요.</p>
+        </div>
+
+        <div class="text-center fade-in">
+          <div class="w-16 h-16 bg-dku-light rounded-full flex items-center justify-center mx-auto mb-4 text-dku-blue font-black text-2xl">2</div>
+          <div class="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <i class="fa-solid fa-list-check text-2xl text-slate-600"></i>
+          </div>
+          <h3 class="font-bold text-lg mb-2">습득물 확인</h3>
+          <p class="text-slate-500 text-sm">실시간으로 업데이트되는 습득물 목록에서 내 물건을 찾아보세요.</p>
+        </div>
+
+        <div class="text-center fade-in">
+          <div class="w-16 h-16 bg-dku-light rounded-full flex items-center justify-center mx-auto mb-4 text-dku-blue font-black text-2xl">3</div>
+          <div class="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <i class="fa-solid fa-box-open text-2xl text-slate-600"></i>
+          </div>
+          <h3 class="font-bold text-lg mb-2">수령하기</h3>
+          <p class="text-slate-500 text-sm">AI 안내에 따라 필요한 서류를 준비하고 관리실에서 수령하세요.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 카테고리 섹션 -->
+  <section class="py-20 px-6 bg-dku-light">
+    <div class="max-w-5xl mx-auto text-center fade-in">
+      <h2 class="text-3xl font-black mb-3">다양한 물품 카테고리</h2>
+      <p class="text-slate-500 mb-10">어떤 물건을 잃어버렸나요? 카테고리별로 빠르게 찾아보세요.</p>
+      <div class="flex flex-wrap justify-center gap-3">
+        <span class="bg-dku-blue text-white px-5 py-2.5 rounded-full font-semibold text-sm"><i class="fa-solid fa-headphones mr-2"></i>전자기기</span>
+        <span class="bg-white text-slate-700 px-5 py-2.5 rounded-full font-semibold text-sm border border-slate-200"><i class="fa-solid fa-wallet mr-2"></i>지갑/가방</span>
+        <span class="bg-white text-slate-700 px-5 py-2.5 rounded-full font-semibold text-sm border border-slate-200"><i class="fa-solid fa-id-card mr-2"></i>신분증</span>
+        <span class="bg-white text-slate-700 px-5 py-2.5 rounded-full font-semibold text-sm border border-slate-200"><i class="fa-solid fa-shirt mr-2"></i>의류/악세서리</span>
+        <span class="bg-white text-slate-700 px-5 py-2.5 rounded-full font-semibold text-sm border border-slate-200"><i class="fa-solid fa-book mr-2"></i>도서/문구</span>
+        <span class="bg-white text-slate-700 px-5 py-2.5 rounded-full font-semibold text-sm border border-slate-200"><i class="fa-solid fa-ellipsis mr-2"></i>기타</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ 섹션 -->
+  <section id="faq" class="py-24 px-6 bg-white">
+    <div class="max-w-3xl mx-auto">
+      <div class="text-center mb-12 fade-in">
+        <p class="text-dku-blue font-semibold text-sm uppercase tracking-widest mb-2">FAQ</p>
+        <h2 class="text-3xl md:text-4xl font-black">자주 묻는 질문</h2>
+      </div>
+
+      <div class="space-y-4 fade-in">
+        <details class="bg-slate-50 border border-slate-200 rounded-2xl p-5 group">
+          <summary class="font-bold cursor-pointer flex justify-between items-center">
+            단디는 누구나 사용할 수 있나요?
+            <i class="fa-solid fa-chevron-down text-slate-400 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <p class="text-slate-600 text-sm mt-3 leading-relaxed">단디는 단국대학교 재학생 전용 서비스입니다. 가입 시 @dankook.ac.kr 이메일 인증이 필요합니다.</p>
+        </details>
+
+        <details class="bg-slate-50 border border-slate-200 rounded-2xl p-5 group">
+          <summary class="font-bold cursor-pointer flex justify-between items-center">
+            물건을 잃어버렸는데 어떻게 해야 하나요?
+            <i class="fa-solid fa-chevron-down text-slate-400 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <p class="text-slate-600 text-sm mt-3 leading-relaxed">로그인 후 메인 화면에서 최근 등록된 습득물을 확인하거나 키워드로 검색하세요. 찾지 못했다면 분실물 등록 기능을 이용해 알림을 받을 수 있습니다.</p>
+        </details>
+
+        <details class="bg-slate-50 border border-slate-200 rounded-2xl p-5 group">
+          <summary class="font-bold cursor-pointer flex justify-between items-center">
+            습득물을 발견했을 때 어떻게 등록하나요?
+            <i class="fa-solid fa-chevron-down text-slate-400 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <p class="text-slate-600 text-sm mt-3 leading-relaxed">하단 내비게이션의 카메라 버튼을 눌러 관리자 등록 화면으로 이동하세요. 사진과 발견 위치를 입력하면 바로 등록됩니다.</p>
+        </details>
+
+        <details class="bg-slate-50 border border-slate-200 rounded-2xl p-5 group">
+          <summary class="font-bold cursor-pointer flex justify-between items-center">
+            AI 수령 안내는 어떻게 작동하나요?
+            <i class="fa-solid fa-chevron-down text-slate-400 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <p class="text-slate-600 text-sm mt-3 leading-relaxed">물품 상세 화면에서 'AI 안내 생성' 버튼을 누르면, 물품의 카테고리와 종류를 분석해 수령 시 필요한 준비물과 절차를 자동으로 안내해줍니다.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA 섹션 -->
+  <section class="hero-gradient text-white py-24 px-6 text-center">
+    <div class="max-w-2xl mx-auto fade-in">
+      <i class="fa-solid fa-magnifying-glass text-5xl mb-6 opacity-80"></i>
+      <h2 class="text-4xl font-black mb-4">지금 바로 시작하세요</h2>
+      <p class="text-blue-100 text-lg mb-8">단국대학교 이메일만 있으면 무료로 이용할 수 있습니다.</p>
+      <a href="./dandi-pages/login.html" class="inline-block bg-white text-dku-blue font-bold text-lg px-10 py-4 rounded-2xl hover:bg-blue-50 transition-colors shadow-xl">
+        단디 시작하기 <i class="fa-solid fa-arrow-right ml-2"></i>
+      </a>
+    </div>
+  </section>
+
+  <!-- 푸터 -->
+  <footer class="bg-slate-900 text-slate-400 py-10 px-6">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-magnifying-glass text-dku-blue"></i>
+        <span class="font-bold text-white">단디(DANDI)</span>
+        <span class="text-slate-500">— 단국대학교 스마트 분실물 플랫폼</span>
+      </div>
+      <div class="flex gap-6">
+        <a href="./dandi-pages/login.html" class="hover:text-white transition-colors">로그인</a>
+        <a href="./dandi-pages/signup.html" class="hover:text-white transition-colors">회원가입</a>
+        <a href="./dandi-pages/main.html" class="hover:text-white transition-colors">메인</a>
+      </div>
+      <p class="text-slate-600 text-xs">© 2025 DANDI. Dankook University Capstone Design.</p>
+    </div>
+  </footer>
+
+  <script>
+    // 스크롤 페이드인 애니메이션
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.15 });
+
+    document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+  </script>
+</body>
+</html>

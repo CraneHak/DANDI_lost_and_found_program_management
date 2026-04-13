@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>단디 - 메인 대시보드</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            dku: { blue: '#0055A6', light: '#e0f2fe', hover: '#004080' }
+          },
+          fontFamily: { sans: ['"Noto Sans KR"', 'sans-serif'] }
+        }
+      }
+    };
+  </script>
+  <style>
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .img-placeholder {
+      background: #eef2f7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans pb-20">
+  <nav class="bg-white shadow-sm sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16 items-center gap-4">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-magnifying-glass text-dku-blue text-2xl"></i>
+          <span class="font-bold text-2xl text-dku-blue tracking-tight">단디<span class="text-sm text-slate-500 ml-1">DANDI</span></span>
+        </div>
+
+        <div class="hidden md:flex flex-1 max-w-lg">
+          <div class="relative w-full">
+            <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400"></i>
+            <input type="text" class="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-full bg-slate-50 focus:outline-none focus:ring-2 focus:ring-dku-blue" placeholder="분실물 키워드 검색 (예: 에어팟, 학생증)">
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <button class="text-slate-500 relative">
+            <i class="fa-regular fa-bell text-xl"></i>
+            <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">2</span>
+          </button>
+          <a href="./mypage.html" class="flex items-center gap-2 text-sm text-slate-700">
+            <span class="w-8 h-8 rounded-full bg-dku-light text-dku-blue font-bold flex items-center justify-center">단</span>
+            <span class="hidden md:block">단국인 님</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+      <a href="./admin-register.html" class="bg-white border-2 border-dku-blue rounded-2xl p-6 flex items-center justify-between hover:bg-dku-light transition-colors group shadow-sm">
+        <div>
+          <h2 class="text-2xl font-bold text-dku-blue mb-1">물건을 잃어버리셨나요?</h2>
+          <p class="text-slate-500">관리자 등록 후 알림 받기</p>
+        </div>
+        <div class="w-14 h-14 rounded-full bg-dku-blue text-white flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+          <i class="fa-solid fa-pen-to-square"></i>
+        </div>
+      </a>
+      <a href="./admin-register.html" class="bg-dku-blue border-2 border-dku-blue rounded-2xl p-6 flex items-center justify-between hover:bg-dku-hover transition-colors group shadow-sm">
+        <div class="text-white">
+          <h2 class="text-2xl font-bold mb-1">주인을 찾아주세요!</h2>
+          <p class="text-blue-100">습득물 등록하고 감사 온도 올리기</p>
+        </div>
+        <div class="w-14 h-14 rounded-full bg-white text-dku-blue flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+          <i class="fa-solid fa-camera"></i>
+        </div>
+      </a>
+    </div>
+
+    <div class="mb-6">
+      <div class="flex justify-between items-end mb-4">
+        <h3 class="text-xl font-bold text-slate-800">최근 등록된 습득물 <span class="text-dku-blue text-sm ml-1">실시간 업데이트 중</span></h3>
+        <div class="text-sm text-slate-500">
+          <button class="font-bold text-slate-800">최신순</button>
+          <span class="mx-1">|</span>
+          <button>정확도순</button>
+        </div>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm mb-3">
+        <p class="text-sm font-semibold text-slate-700 mb-2">물건 카테고리별 분류</p>
+        <div class="flex gap-2 overflow-x-auto hide-scrollbar">
+          <button class="px-4 py-1.5 rounded-full bg-dku-blue text-white text-sm">전체</button>
+          <button class="px-4 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-sm">전자기기</button>
+          <button class="px-4 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-sm">지갑/가방</button>
+          <button class="px-4 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-sm">신분증</button>
+          <button class="px-4 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-sm">의류/악세서리</button>
+          <button class="px-4 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-sm">도서/문구</button>
+        </div>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+        <p class="text-sm font-semibold text-slate-700 mb-2">건물별 분류</p>
+        <div class="flex gap-2 overflow-x-auto hide-scrollbar">
+          <button class="px-4 py-1.5 rounded-full bg-dku-blue text-white text-sm">전체 건물</button>
+          <button class="px-4 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-sm">소프트웨어ICT관</button>
+          <button class="px-4 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-sm">인문관</button>
+          <button class="px-4 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-sm">상경관</button>
+          <button class="px-4 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-sm">사범관</button>
+          <button class="px-4 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-sm">도서관</button>
+        </div>
+      </div>
+    </div>
+
+    <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+      <a href="./item-detail.html" class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-shadow">
+        <div class="h-40 relative img-placeholder">
+          <span class="absolute top-3 left-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">보관중</span>
+        </div>
+        <div class="p-4">
+          <h4 class="font-bold text-lg">에어팟 프로 오른쪽 유닛</h4>
+          <p class="text-sm text-slate-500 mt-1"><i class="fa-solid fa-location-dot text-dku-blue mr-1"></i>소프트웨어ICT관 1층 로비</p>
+          <p class="text-sm text-slate-500"><i class="fa-regular fa-clock mr-1"></i>10분 전 등록</p>
+        </div>
+      </a>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <div class="h-40 relative img-placeholder">
+          <span class="absolute top-3 left-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">보관중</span>
+        </div>
+        <div class="p-4">
+          <h4 class="font-bold text-lg">검은색 닥스 가죽 지갑</h4>
+          <p class="text-sm text-slate-500 mt-1"><i class="fa-solid fa-location-dot text-dku-blue mr-1"></i>인문관 315호 앞 벤치</p>
+          <p class="text-sm text-slate-500"><i class="fa-regular fa-clock mr-1"></i>30분 전 등록</p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <div class="h-40 relative img-placeholder">
+          <span class="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">주인찾음</span>
+        </div>
+        <div class="p-4">
+          <h4 class="font-bold text-lg">단국대 학생증 (김*민)</h4>
+          <p class="text-sm text-slate-500 mt-1"><i class="fa-solid fa-location-dot text-dku-blue mr-1"></i>미디어센터 B1층 스튜디오</p>
+          <p class="text-sm text-slate-500"><i class="fa-regular fa-clock mr-1"></i>1시간 전 등록</p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <div class="h-40 relative img-placeholder">
+          <span class="absolute top-3 left-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">보관중</span>
+        </div>
+        <div class="p-4">
+          <h4 class="font-bold text-lg">아이패드 에어 5세대 블루</h4>
+          <p class="text-sm text-slate-500 mt-1"><i class="fa-solid fa-location-dot text-dku-blue mr-1"></i>퇴계기념도서관 제3열람실</p>
+          <p class="text-sm text-slate-500"><i class="fa-regular fa-clock mr-1"></i>2시간 전 등록</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="mt-10 text-center">
+      <button class="px-8 py-3 bg-white border border-slate-300 rounded-full text-slate-600 font-medium hover:text-dku-blue">
+        더보기 <i class="fa-solid fa-chevron-down ml-1"></i>
+      </button>
+    </div>
+  </main>
+
+  <nav class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-[0_-2px_10px_rgba(0,0,0,0.06)] z-50">
+    <div class="max-w-md mx-auto grid grid-cols-4 text-center text-xs">
+      <a href="./main.html" class="py-2 font-semibold text-dku-blue">
+        <i class="fa-solid fa-house block text-lg mb-1"></i>홈
+      </a>
+      <a href="./map.html" class="py-2 text-slate-500">
+        <i class="fa-solid fa-map-location-dot block text-lg mb-1"></i>지도
+      </a>
+      <a href="./admin-register.html" class="py-2 text-slate-500">
+        <i class="fa-solid fa-camera block text-lg mb-1"></i>관리자
+      </a>
+      <a href="./mypage.html" class="py-2 text-slate-500">
+        <i class="fa-solid fa-user block text-lg mb-1"></i>마이
+      </a>
+    </div>
+  </nav>
+</body>
+</html>

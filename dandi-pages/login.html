@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>단디 - 로그인</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { dku: { blue: '#0055A6', light: '#e0f2fe', hover: '#004080' } },
+          fontFamily: { sans: ['"Noto Sans KR"', 'sans-serif'] }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4 md:p-8 font-sans">
+  <main class="w-full max-w-5xl grid lg:grid-cols-2 gap-6 items-stretch">
+    <section class="hidden lg:flex bg-dku-blue text-white rounded-3xl p-8 flex-col justify-between shadow-sm">
+      <div>
+        <h2 class="text-3xl font-bold">단디(DANDI)</h2>
+        <p class="text-blue-100 mt-3 leading-relaxed">단국대학교 학생들을 위한 스마트 분실물 찾기 서비스</p>
+      </div>
+      <ul class="text-sm space-y-2 text-blue-100">
+        <li><i class="fa-solid fa-check mr-2"></i>실시간 습득물 확인</li>
+        <li><i class="fa-solid fa-check mr-2"></i>위치 기반 관리실 안내</li>
+      </ul>
+    </section>
+
+    <section class="w-full bg-white rounded-3xl shadow-sm border border-slate-100 p-7">
+    <div class="text-center">
+      <div class="w-16 h-16 bg-dku-light rounded-2xl mx-auto flex items-center justify-center mb-3">
+        <i class="fa-solid fa-magnifying-glass text-2xl text-dku-blue"></i>
+      </div>
+      <h1 class="text-3xl font-bold text-dku-blue tracking-tight">단디 <span class="text-sm text-slate-500 font-medium">DANDI</span></h1>
+      <p class="text-sm text-slate-500 mt-2">단국대학교 스마트 분실물 플랫폼</p>
+    </div>
+
+    <form class="mt-8 space-y-4" onsubmit="return checkLogin(event)">
+      <div>
+        <label class="text-sm font-bold text-slate-700">학교 이메일</label>
+        <div class="relative mt-1">
+          <i class="fa-regular fa-envelope absolute left-3 top-3.5 text-slate-400"></i>
+          <input id="email" type="email" placeholder="example@dankook.ac.kr" class="w-full border border-slate-300 rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-dku-blue" required>
+        </div>
+        <p id="error" class="text-xs text-red-500 mt-1 hidden"></p>
+      </div>
+      <div>
+        <label class="text-sm font-bold text-slate-700">비밀번호</label>
+        <div class="relative mt-1">
+          <i class="fa-solid fa-lock absolute left-3 top-3.5 text-slate-400"></i>
+          <input type="password" placeholder="비밀번호 입력" class="w-full border border-slate-300 rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-dku-blue" required>
+        </div>
+      </div>
+
+      <div class="flex justify-end text-sm">
+        <button type="button" onclick="alert('비밀번호 찾기 링크를 이메일로 발송했습니다.')" class="text-dku-blue font-semibold">비밀번호 찾기</button>
+      </div>
+
+      <button type="submit" class="w-full bg-dku-blue text-white py-3 rounded-xl font-bold hover:bg-dku-hover transition-colors">로그인</button>
+    </form>
+
+    <p class="text-center text-sm text-slate-500 mt-5">
+      아직 계정이 없으신가요?
+      <a href="./signup.html" class="text-dku-blue font-semibold">회원가입</a>
+    </p>
+    </section>
+  </main>
+
+  <script>
+    function checkLogin(event) {
+      event.preventDefault();
+      const email = document.getElementById('email').value.trim().toLowerCase();
+      const error = document.getElementById('error');
+      if (!email.endsWith('@dankook.ac.kr')) {
+        error.textContent = '@dankook.ac.kr 이메일만 사용 가능합니다.';
+        error.classList.remove('hidden');
+        return false;
+      }
+      error.classList.add('hidden');
+      window.location.href = './main.html';
+      return false;
+    }
+  </script>
+</body>
+</html>
