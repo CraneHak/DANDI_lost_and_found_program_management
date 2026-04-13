@@ -1,5 +1,19 @@
 # DANDI Backend
 
+단국대학교(죽전) 분실물 통합 관리 서비스 백엔드입니다.
+
+---
+
+## 브랜치 구조
+
+| 브랜치 | 설명 |
+|--------|------|
+| `main` | 기본 Spring Boot 프로젝트 설정 |
+| `database` | AWS RDS MySQL 연결 설정 |
+| `crawling` | 단국대 분실물 게시판 크롤러 + S3 이미지 업로드 + REST API |
+
+---
+
 ## 개발 환경 요구사항
 
 - Java 17
@@ -42,6 +56,7 @@ docker -v
 ```bash
 git clone https://github.com/CraneHak/DANDI_Backend.git
 cd DANDI_Backend
+git checkout database
 ```
 
 ---
@@ -49,7 +64,6 @@ cd DANDI_Backend
 ### 4. gradle.properties 설정 (필수)
 
 > Java 17이 설치되어 있어도 JAVA_HOME이 다른 버전으로 잡혀 있으면 Gradle이 Java 17을 찾지 못합니다.
-> 아래 과정을 통해 프로젝트 루트에 `gradle.properties` 파일을 직접 만들어주세요.
 > (이 파일은 `.gitignore`에 등록되어 있어 개인 로컬에서만 유지됩니다)
 
 **Step 1 — Java 17 설치 경로 확인**
@@ -64,28 +78,24 @@ C:\Program Files\Java\jdk-25\bin\java.exe
 C:\Users\사용자명\AppData\Local\Programs\Eclipse Adoptium\jdk-17.0.x.x-hotspot\bin\java.exe
 ```
 
-`jdk-17`이 포함된 경로에서 `\bin\java.exe` 부분을 제외한 경로가 필요합니다.
-
 **Step 2 — gradle.properties 파일 생성**
 
-프로젝트 루트(`DANDI_Backend/`)에 `gradle.properties` 파일을 생성하고 아래 내용을 작성합니다:
+프로젝트 루트에 `gradle.properties` 파일을 생성하고 아래 내용을 작성합니다:
 
 ```properties
 org.gradle.java.installations.paths=C:\\Users\\{사용자명}\\AppData\\Local\\Programs\\Eclipse Adoptium\\jdk-17.0.x.x-hotspot
 ```
 
-> `{사용자명}`과 버전 번호는 Step 1에서 확인한 실제 경로로 수정하세요.  
+> `{사용자명}`과 버전 번호는 Step 1에서 확인한 실제 경로로 수정하세요.
 > 경로 구분자는 반드시 `\\` (역슬래시 두 개)를 사용해야 합니다.
 
 ---
 
-### 5. MySQL 실행
+### 5. MySQL 실행 (로컬 개발용)
 
 ```bash
 docker-compose up -d
 ```
-
-처음 실행 시 MySQL 이미지를 다운로드하므로 시간이 걸릴 수 있습니다.
 
 실행 확인:
 ```bash
@@ -97,46 +107,23 @@ docker ps
 
 ### 6. Spring Boot 실행
 
+**로컬 DB (Docker MySQL):**
 ```bash
 ./gradlew bootRun
 ```
 
-아래 로그가 출력되면 정상 실행된 것입니다:
+**프로덕션 DB (AWS RDS):**
+
+PowerShell:
+```powershell
+$env:SPRING_PROFILES_ACTIVE="prod"
+$env:DB_PASSWORD="비밀번호"
+./gradlew bootRun
+```
+
+정상 실행 시:
 ```
 Started Main in x.xxx seconds
-```
-
-브라우저에서 확인: [http://localhost:8080](http://localhost:8080)
-
-> 브라우저에서 **404 Whitelabel Error Page**가 뜨는 것은 정상입니다. 아직 API endpoint가 없기 때문이며, 서버는 정상 동작 중입니다.
-
----
-
-## 문제 해결 (Troubleshooting)
-
-### Gradle이 Java 17을 찾지 못하는 경우
-
-**증상:**
-```
-Cannot find a Java installation on your machine matching: {languageVersion=17}
-```
-
-**원인:** Java 17이 설치되어 있어도 JAVA_HOME 환경변수가 다른 버전을 가리키면 Gradle이 Java 17을 찾지 못합니다.
-
-**해결:** 위 [Step 4. gradle.properties 설정](#4-gradleproperties-설정-필수)을 따라 `gradle.properties` 파일을 생성하세요.
-
----
-
-### `gradlew.bat: command not found` 오류
-
-**증상:**
-```
-bash: gradlew.bat: command not found
-```
-
-**해결:** bash 환경(WSL, Git Bash 등)에서는 `.bat` 대신 아래 명령을 사용합니다:
-```bash
-./gradlew bootRun
 ```
 
 ---
@@ -157,7 +144,7 @@ bash: gradlew.bat: command not found
 
 ---
 
-### 공용 DB (AWS RDS — 크롤링 데이터 포함)
+### 공용 DB (AWS RDS)
 
 단국대 분실물 게시판에서 크롤링한 데이터가 저장되어 있는 공용 DB입니다.
 
@@ -166,13 +153,13 @@ bash: gradlew.bat: command not found
 | Host | dandi-db.cdocgw0s68cj.ap-northeast-2.rds.amazonaws.com |
 | Port | 3306 |
 | DB 이름 | dandidb |
-| 사용자 | admin |
-| 비밀번호 | 별도 공유 (팀 채널 참고) |
+| 사용자 | dandi |
+| 비밀번호 | 팀 채널 참고 |
 
 #### MySQL 클라이언트로 접속
 
 ```bash
-mysql -h dandi-db.cdocgw0s68cj.ap-northeast-2.rds.amazonaws.com -u admin -p dandidb
+mysql -h dandi-db.cdocgw0s68cj.ap-northeast-2.rds.amazonaws.com -u dandi -p dandidb
 ```
 
 #### DBeaver / DataGrip 등 GUI 툴로 접속
@@ -180,37 +167,70 @@ mysql -h dandi-db.cdocgw0s68cj.ap-northeast-2.rds.amazonaws.com -u admin -p dand
 - Host: `dandi-db.cdocgw0s68cj.ap-northeast-2.rds.amazonaws.com`
 - Port: `3306`
 - Database: `dandidb`
-- Username: `admin`
+- Username: `dandi`
 - Password: (팀 채널 참고)
 - **SSL 비활성화** (allowPublicKeyRetrieval=true, useSSL=false)
 
 #### Spring Boot에서 RDS 연결 (prod 프로파일)
 
-`src/main/resources/application-prod.properties` 파일을 아래 내용으로 생성하세요.  
-(이 파일은 `.gitignore`에 등록되어 있으므로 커밋되지 않습니다.)
+`src/main/resources/application-prod.properties` 파일을 생성하세요.
+(`.gitignore`에 등록되어 있으므로 커밋되지 않습니다)
 
 ```properties
 spring.datasource.url=jdbc:mysql://dandi-db.cdocgw0s68cj.ap-northeast-2.rds.amazonaws.com:3306/dandidb?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
 spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
-spring.datasource.username=admin
+spring.datasource.username=dandi
 spring.datasource.password=비밀번호_입력
+spring.jpa.hibernate.ddl-auto=validate
 ```
 
-RDS로 연결하여 실행:
+#### DB 스키마
 
-```bash
-./gradlew bootRun --args='--spring.profiles.active=prod'
+```sql
+CREATE TABLE lost_item (
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    post_no         INT UNIQUE,
+    item_name       VARCHAR(255),
+    found_location  VARCHAR(255),
+    stored_location VARCHAR(255),
+    stored_date     DATE,
+    contact         VARCHAR(100),
+    color           VARCHAR(50),
+    item_type       VARCHAR(255),
+    image_url       VARCHAR(500)
+) CHARACTER SET utf8mb4;
 ```
 
 #### 현재 저장된 데이터
 
 | 테이블 | 설명 | 건수 |
 |--------|------|------|
-| `lost_item` | 단국대(죽전) 분실물 게시판 크롤링 데이터 | 48건 |
+| `lost_item` | 단국대(죽전) 분실물 게시판 크롤링 데이터 | 50건 |
 
 ```sql
--- 접속 후 확인
-SELECT id, item_name, found_location, stored_date FROM lost_item LIMIT 10;
+SELECT id, item_name, found_location, stored_date, image_url FROM lost_item LIMIT 10;
+```
+
+---
+
+## 문제 해결 (Troubleshooting)
+
+### Gradle이 Java 17을 찾지 못하는 경우
+
+**증상:**
+```
+Cannot find a Java installation on your machine matching: {languageVersion=17}
+```
+
+**해결:** 위 [gradle.properties 설정](#4-gradleproperties-설정-필수) 참고
+
+---
+
+### `gradlew.bat: command not found` 오류
+
+bash 환경(WSL, Git Bash 등)에서는:
+```bash
+./gradlew bootRun
 ```
 
 ---
