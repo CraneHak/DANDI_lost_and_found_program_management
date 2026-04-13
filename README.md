@@ -1,5 +1,19 @@
 # DANDI Backend
 
+단국대학교(죽전) 분실물 통합 관리 서비스 백엔드입니다.
+
+---
+
+## 브랜치 구조
+
+| 브랜치 | 설명 |
+|--------|------|
+| `main` | 기본 Spring Boot 프로젝트 설정 |
+| `database` | AWS RDS MySQL 연결 설정 |
+| `crawling` | 단국대 분실물 게시판 크롤러 + S3 이미지 업로드 + REST API |
+
+---
+
 ## 개발 환경 요구사항
 
 - Java 17
@@ -74,7 +88,7 @@ C:\Users\사용자명\AppData\Local\Programs\Eclipse Adoptium\jdk-17.0.x.x-hotsp
 org.gradle.java.installations.paths=C:\\Users\\{사용자명}\\AppData\\Local\\Programs\\Eclipse Adoptium\\jdk-17.0.x.x-hotspot
 ```
 
-> `{사용자명}`과 버전 번호는 Step 1에서 확인한 실제 경로로 수정하세요.  
+> `{사용자명}`과 버전 번호는 Step 1에서 확인한 실제 경로로 수정하세요.
 > 경로 구분자는 반드시 `\\` (역슬래시 두 개)를 사용해야 합니다.
 
 ---
@@ -108,7 +122,23 @@ Started Main in x.xxx seconds
 
 브라우저에서 확인: [http://localhost:8080](http://localhost:8080)
 
-> 브라우저에서 **404 Whitelabel Error Page**가 뜨는 것은 정상입니다. 아직 API endpoint가 없기 때문이며, 서버는 정상 동작 중입니다.
+> 브라우저에서 **404 Whitelabel Error Page**가 뜨는 것은 정상입니다. 아직 루트 엔드포인트가 없기 때문이며, 서버는 정상 동작 중입니다.
+
+---
+
+## DB 접속 정보
+
+### 로컬 개발용 (Docker MySQL)
+
+| 항목 | 값 |
+|------|-----|
+| Host | localhost |
+| Port | 3306 |
+| DB 이름 | dandidb |
+| 사용자 | dandi |
+| 비밀번호 | dandi1234 |
+
+`docker-compose up -d` 실행 후 사용합니다.
 
 ---
 
@@ -121,9 +151,7 @@ Started Main in x.xxx seconds
 Cannot find a Java installation on your machine matching: {languageVersion=17}
 ```
 
-**원인:** Java 17이 설치되어 있어도 JAVA_HOME 환경변수가 다른 버전을 가리키면 Gradle이 Java 17을 찾지 못합니다.
-
-**해결:** 위 [Step 4. gradle.properties 설정](#4-gradleproperties-설정-필수)을 따라 `gradle.properties` 파일을 생성하세요.
+**해결:** 위 [gradle.properties 설정](#4-gradleproperties-설정-필수) 참고
 
 ---
 
@@ -138,20 +166,6 @@ bash: gradlew.bat: command not found
 ```bash
 ./gradlew bootRun
 ```
-
----
-
-## DB 접속 정보
-
-| 항목 | 값 |
-|------|-----|
-| Host | localhost |
-| Port | 3306 |
-| DB 이름 | dandidb |
-| 사용자 | dandi |
-| 비밀번호 | dandi1234 |
-
-`docker-compose up -d` 실행 후 사용합니다.
 
 ---
 
