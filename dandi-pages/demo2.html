@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>단디(DANDI) - 스마트 분실물 플랫폼</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { dku: { blue: '#0055A6', light: '#e0f2fe' } },
+                    fontFamily: { sans: ['"Noto Sans KR"', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #f8fafc; }
+        .page { display: none; padding-bottom: 80px; }
+        .page.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* 하단 네비게이션 바 숨김 처리용 */
+        .no-nav #bottom-nav { display: none; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        
+        /* 챗봇 플로팅 버튼 */
+        .chatbot-btn {
+            position: fixed; bottom: 90px; right: 20px;
+            width: 50px; height: 50px; border-radius: 25px;
+            background-color: #0055A6; color: white;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; z-index: 50;
+        }
+    </style>
+</head>
+<body class="no-nav"> <section id="page-login" class="page active min-h-screen flex items-center justify-center p-4 bg-white">
+        <div class="w-full max-w-sm text-center">
+            <i class="fa-solid fa-magnifying-glass text-5xl text-dku-blue mb-4"></i>
+            <h1 class="text-4xl font-bold text-gray-900 mb-2">단디</h1>
+            <p class="text-gray-500 mb-8">단국대학교 스마트 분실물 플랫폼</p>
+            
+            <form id="login-form" class="space-y-4 text-left" onsubmit="handleLogin(event)">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">구글 이메일 로그인</label>
+                    <input type="email" id="email-input" required placeholder="example@dankook.ac.kr" class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-dku-blue outline-none">
+                    <p id="email-error" class="text-red-500 text-xs mt-1 hidden">@dankook.ac.kr 계정만 가입/로그인이 가능합니다.</p>
+                </div>
+                <div>
+                    <input type="password" required placeholder="비밀번호" class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-dku-blue outline-none">
+                </div>
+                <button type="submit" class="w-full bg-dku-blue text-white font-bold py-3 rounded-xl hover:bg-blue-800 transition">로그인 / 회원가입</button>
+            </form>
+        </div>
+    </section>
+
+    <section id="page-main" class="page max-w-md mx-auto bg-white min-h-screen shadow-md relative">
+        <header class="p-4 flex justify-between items-center border-b sticky top-0 bg-white z-10">
+            <h1 class="text-xl font-bold text-dku-blue">단디</h1>
+            <div class="flex gap-3">
+                <i class="fa-regular fa-bell text-xl text-gray-600"></i>
+            </div>
+        </header>
+
+        <div class="p-4">
+            <div class="relative mb-6">
+                <i class="fa-solid fa-search absolute left-3 top-3 text-gray-400"></i>
+                <input type="text" placeholder="분실물을 검색해보세요" class="w-full bg-gray-100 rounded-full py-2 pl-10 pr-4 outline-none focus:ring-2 focus:ring-dku-blue">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <button onclick="navigate('page-admin')" class="bg-blue-50 border border-blue-200 p-4 rounded-xl text-left hover:bg-blue-100">
+                    <i class="fa-solid fa-box-open text-dku-blue text-2xl mb-2"></i>
+                    <h3 class="font-bold text-gray-800 text-sm">주인 찾아주세요</h3>
+                    <p class="text-xs text-gray-500">습득물 등록 (지도)</p>
+                </button>
+                <button onclick="alert('분실물 등록 및 알림 설정 페이지로 이동합니다.')" class="bg-red-50 border border-red-200 p-4 rounded-xl text-left hover:bg-red-100">
+                    <i class="fa-solid fa-bullhorn text-red-500 text-2xl mb-2"></i>
+                    <h3 class="font-bold text-gray-800 text-sm">물건을 찾아요</h3>
+                    <p class="text-xs text-gray-500">분실물 등록/알림</p>
+                </button>
+            </div>
+
+            <div class="flex gap-2 overflow-x-auto hide-scrollbar mb-6 pb-2">
+                <span class="px-4 py-1.5 bg-gray-800 text-white text-sm rounded-full whitespace-nowrap">전체보기</span>
+                <span class="px-4 py-1.5 bg-gray-100 text-gray-600 text-sm rounded-full whitespace-nowrap">전자기기</span>
+                <span class="px-4 py-1.5 bg-gray-100 text-gray-600 text-sm rounded-full whitespace-nowrap">지갑/신분증</span>
+                <span class="px-4 py-1.5 bg-gray-100 text-gray-600 text-sm rounded-full whitespace-nowrap">도서류</span>
+            </div>
+
+            <h2 class="font-bold text-lg mb-3">최근 등록된 습득물</h2>
+            <div class="space-y-4">
+                <div class="flex gap-4 p-3 border rounded-xl hover:shadow-md cursor-pointer" onclick="navigate('page-detail')">
+                    <div class="w-20 h-20 bg-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center text-xs text-gray-400">사진</div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-start">
+                            <h3 class="font-bold text-gray-800">에어팟 프로 오른쪽</h3>
+                            <span class="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded font-bold">보관중</span>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1"><i class="fa-solid fa-location-dot"></i> 소프트웨어ICT관 1층</p>
+                        <p class="text-xs text-gray-400 mt-1">10분 전 • 전자기기</p>
+                    </div>
+                </div>
+                
+                <div class="flex gap-4 p-3 border rounded-xl hover:shadow-md cursor-pointer">
+                    <div class="w-20 h-20 bg-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center text-xs text-gray-400">사진</div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-start">
+                            <h3 class="font-bold text-gray-800">단국대 학생증 (김*민)</h3>
+                            <span class="text-[10px] bg-gray-200 text-gray-600 px-2 py-1 rounded font-bold">주인찾음</span>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1"><i class="fa-solid fa-location-dot"></i> 상경관 3층</p>
+                        <p class="text-xs text-gray-400 mt-1">1시간 전 • 신분증 (사진비공개)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chatbot-btn" onclick="alert('단디 Q&A 챗봇입니다. 분실물 관련 규정이나 센터 위치를 물어보세요!')">
+            <i class="fa-solid fa-robot text-2xl"></i>
+        </div>
+    </section>
+
+    <section id="page-detail" class="page max-w-md mx-auto bg-white min-h-screen shadow-md">
+        <header class="p-4 flex items-center border-b sticky top-0 bg-white z-10">
+            <i class="fa-solid fa-arrow-left text-xl mr-4 cursor-pointer" onclick="navigate('page-main')"></i>
+            <h1 class="text-lg font-bold">물품 상세정보</h1>
+        </header>
+        
+        <div class="h-64 bg-gray-200 flex items-center justify-center text-gray-400">
+            [에어팟 프로 사진]
+        </div>
+        
+        <div class="p-5">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-sm text-dku-blue font-bold">전자기기 > 무선이어폰</span>
+                <span class="text-xs text-gray-500">조회 42</span>
+            </div>
+            <h2 class="text-2xl font-bold mb-4">에어팟 프로 오른쪽 유닛</h2>
+            
+            <div class="bg-gray-50 p-4 rounded-xl mb-6 space-y-2 text-sm">
+                <p><span class="text-gray-500 w-20 inline-block">습득 위치</span> 소프트웨어ICT관 1층 정수기 위</p>
+                <p><span class="text-gray-500 w-20 inline-block">습득 시간</span> 2026.03.26 15:30</p>
+                <p><span class="text-gray-500 w-20 inline-block">현재 보관</span> 소프트웨어융합대학 교학팀</p>
+            </div>
+
+            <div class="border border-dku-blue bg-blue-50 rounded-xl p-4 mb-6 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-indigo-500"></div>
+                <div class="flex items-center mb-2">
+                    <i class="fa-solid fa-wand-magic-sparkles text-dku-blue mr-2"></i>
+                    <h3 class="font-bold text-dku-blue text-sm">AI 수령 안내 가이드</h3>
+                </div>
+                <p id="ai-text" class="text-sm text-gray-700 leading-relaxed italic text-gray-400">AI가 제품 정보를 분석 중입니다...</p>
+            </div>
+
+            <button onclick="alert('교학팀 전화번호(031-8005-XXXX)로 연결합니다.')" class="w-full bg-dku-blue text-white font-bold py-3 rounded-xl">전화하기</button>
+        </div>
+    </section>
+
+    <section id="page-map" class="page max-w-md mx-auto bg-white min-h-screen shadow-md relative">
+        <header class="p-4 flex items-center border-b sticky top-0 bg-white z-20">
+            <h1 class="text-lg font-bold">분실물 지도</h1>
+        </header>
+        
+        <div class="relative w-full h-[calc(100vh-140px)] bg-blue-50 overflow-hidden">
+            <div class="absolute inset-0 opacity-30" style="background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 20px 20px;"></div>
+            
+            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                <div class="w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-lg animate-pulse"></div>
+            </div>
+
+            <div class="absolute top-1/3 left-1/4 group cursor-pointer" onclick="showMapDetail('소융대 교학팀', '소프트웨어ICT관 2층', '031-8005-1234')">
+                <i class="fa-solid fa-location-dot text-4xl text-red-500 drop-shadow-md"></i>
+                <div class="absolute top-10 -left-6 bg-white text-xs font-bold px-2 py-1 rounded shadow whitespace-nowrap">소융대 교학팀</div>
+            </div>
+
+            <div class="absolute bottom-1/3 right-1/4 group cursor-pointer" onclick="showMapDetail('상경관 1층 로비', '현황판: 지갑 2개, 우산 5개 보관중', '-')">
+                <i class="fa-solid fa-map-pin text-3xl text-dku-blue drop-shadow-md"></i>
+                <div class="absolute top-8 -left-4 bg-white text-xs font-bold px-2 py-1 rounded shadow whitespace-nowrap">상경관 현황판</div>
+            </div>
+
+            <div id="map-info-panel" class="absolute bottom-0 left-0 w-full bg-white rounded-t-2xl shadow-[0_-5px_15px_rgba(0,0,0,0.1)] p-5 transform translate-y-full transition-transform duration-300">
+                <div class="flex justify-between items-start mb-2">
+                    <h3 id="map-info-title" class="font-bold text-lg">장소명</h3>
+                    <button onclick="document.getElementById('map-info-panel').classList.add('translate-y-full')" class="text-gray-400"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                <div class="w-full h-32 bg-gray-200 rounded-lg mb-3 flex items-center justify-center text-sm text-gray-500">
+                    [관리실/현황판 사진 출력 영역]
+                </div>
+                <p id="map-info-desc" class="text-sm text-gray-600 mb-1">상세 위치</p>
+                <p id="map-info-phone" class="text-sm font-bold text-dku-blue"><i class="fa-solid fa-phone mr-1"></i> 전화번호</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="page-admin" class="page max-w-md mx-auto bg-white min-h-screen shadow-md">
+        <header class="p-4 flex items-center justify-between border-b sticky top-0 bg-white z-10">
+            <h1 class="text-lg font-bold">습득물 등록 (관리자/학생)</h1>
+            <button onclick="alert('등록된 물품을 삭제했습니다. DB가 업데이트됩니다.')" class="text-red-500 text-sm font-bold">삭제(DB)</button>
+        </header>
+
+        <div class="p-5 space-y-5">
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-2">사진 업로드 (AI 자동 인식)</label>
+                <div id="upload-box" class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:bg-gray-50" onclick="simulateVisionAPI()">
+                    <i class="fa-solid fa-camera text-3xl text-gray-400 mb-2"></i>
+                    <p class="text-sm text-gray-500">클릭하여 촬영 또는 업로드</p>
+                    <p class="text-xs text-gray-400 mt-1">신분증은 개인정보 보호를 위해 사진이 저장되지 않습니다.</p>
+                </div>
+                <div id="vision-result" class="hidden mt-3 p-3 bg-green-50 rounded-lg border border-green-200 text-sm">
+                    <p class="font-bold text-green-700"><i class="fa-solid fa-check-circle mr-1"></i> Vision API 인식 완료</p>
+                    <p class="text-gray-700 mt-1">카테고리: <span class="font-bold">전자기기 (무선이어폰)</span></p>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">습득 위치</label>
+                <input type="text" placeholder="예: 상경관 2층 화장실 앞" class="w-full px-4 py-3 border rounded-xl outline-none">
+            </div>
+
+            <div class="pt-4 border-t">
+                <label class="block text-sm font-bold text-gray-700 mb-1">보안 장부 기록 (OTP 인증)</label>
+                <div class="flex gap-2">
+                    <input type="text" placeholder="인증번호 6자리" maxlength="6" class="flex-1 px-4 py-3 border rounded-xl outline-none text-center tracking-widest">
+                    <button class="bg-gray-800 text-white px-4 py-3 rounded-xl text-sm font-bold whitespace-nowrap">인증요청</button>
+                </div>
+            </div>
+
+            <button onclick="alert('DB 장부에 안전하게 기록되었습니다!')" class="w-full bg-dku-blue text-white font-bold py-4 rounded-xl mt-4">DB 등록 완료</button>
+        </div>
+    </section>
+
+    <section id="page-mypage" class="page max-w-md mx-auto bg-white min-h-screen shadow-md">
+        <header class="p-4 border-b bg-white">
+            <h1 class="text-lg font-bold">마이페이지</h1>
+        </header>
+
+        <div class="p-5">
+            <div class="flex items-center gap-4 mb-8">
+                <div class="w-16 h-16 bg-blue-100 text-dku-blue rounded-full flex items-center justify-center text-2xl font-bold">단</div>
+                <div>
+                    <h2 class="font-bold text-lg">단국인 님</h2>
+                    <p class="text-sm text-gray-500">software@dankook.ac.kr</p>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div>
+                    <h3 class="font-bold text-gray-800 mb-3 text-sm border-b pb-2">매칭 알림 설정</h3>
+                    <div class="flex justify-between items-center py-2">
+                        <span class="text-sm text-gray-700">키워드 알림 (에어팟, 지갑)</span>
+                        <div class="w-12 h-6 bg-dku-blue rounded-full relative cursor-pointer">
+                            <div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full"></div>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center py-2">
+                        <span class="text-sm text-gray-700">관심 건물 알림 (소프트웨어ICT관)</span>
+                        <div class="w-12 h-6 bg-dku-blue rounded-full relative cursor-pointer">
+                            <div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-bold text-gray-800 mb-3 text-sm border-b pb-2">나의 활동 기록</h3>
+                    <ul class="space-y-3">
+                        <li class="flex justify-between items-center text-sm p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
+                            <span><i class="fa-regular fa-file-lines mr-2 text-gray-400"></i>내가 쓴 분실 신고글</span>
+                            <span class="bg-gray-200 text-xs px-2 py-0.5 rounded-full">1</span>
+                        </li>
+                        <li class="flex justify-between items-center text-sm p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
+                            <span><i class="fa-solid fa-hand-holding-heart mr-2 text-gray-400"></i>내가 찾아준 습득물 기록</span>
+                            <span class="bg-dku-blue text-white text-xs px-2 py-0.5 rounded-full">3</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <button onclick="document.body.classList.add('no-nav'); navigate('page-login');" class="w-full py-3 mt-4 text-gray-500 border rounded-xl text-sm font-bold">로그아웃</button>
+            </div>
+        </div>
+    </section>
+
+    <nav id="bottom-nav" class="fixed bottom-0 left-0 w-full bg-white border-t flex justify-around py-3 z-40 max-w-md mx-auto right-0 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+        <button onclick="navigate('page-main')" class="nav-btn flex flex-col items-center text-dku-blue" data-target="page-main">
+            <i class="fa-solid fa-house text-xl mb-1"></i>
+            <span class="text-[10px] font-bold">홈</span>
+        </button>
+        <button onclick="navigate('page-map')" class="nav-btn flex flex-col items-center text-gray-400 hover:text-dku-blue" data-target="page-map">
+            <i class="fa-solid fa-map text-xl mb-1"></i>
+            <span class="text-[10px] font-bold">지도</span>
+        </button>
+        <button onclick="navigate('page-admin')" class="nav-btn flex flex-col items-center text-gray-400 hover:text-dku-blue" data-target="page-admin">
+            <i class="fa-solid fa-camera text-xl mb-1"></i>
+            <span class="text-[10px] font-bold">등록</span>
+        </button>
+        <button onclick="navigate('page-mypage')" class="nav-btn flex flex-col items-center text-gray-400 hover:text-dku-blue" data-target="page-mypage">
+            <i class="fa-solid fa-user text-xl mb-1"></i>
+            <span class="text-[10px] font-bold">마이페이지</span>
+        </button>
+    </nav>
+
+    <script>
+        // 1. 페이지 네비게이션 함수
+        function navigate(pageId) {
+            // 모든 페이지 숨기기
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            // 대상 페이지 보이기
+            document.getElementById(pageId).classList.add('active');
+
+            // 상세 페이지일 경우 AI 분석 시뮬레이션 실행
+            if(pageId === 'page-detail') {
+                simulateAI();
+            }
+
+            // 하단 네비게이션 아이콘 색상 변경
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if(btn.dataset.target === pageId) {
+                    btn.classList.replace('text-gray-400', 'text-dku-blue');
+                } else {
+                    btn.classList.replace('text-dku-blue', 'text-gray-400');
+                }
+            });
+            
+            // 페이지 최상단으로 스크롤
+            window.scrollTo(0, 0);
+        }
+
+        // 2. 로그인 및 이메일 필터링 로직
+        function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('email-input').value;
+            const errorMsg = document.getElementById('email-error');
+            
+            // @dankook.ac.kr 도메인 체크
+            if(email.endsWith('@dankook.ac.kr')) {
+                errorMsg.classList.add('hidden');
+                document.body.classList.remove('no-nav'); // 네비게이션 바 표시
+                navigate('page-main'); // 메인 화면으로 이동
+            } else {
+                errorMsg.classList.remove('hidden'); // 에러 메시지 표시
+            }
+        }
+
+        // 3. 상세페이지 생성형 AI 분석 시뮬레이션
+        function simulateAI() {
+            const aiText = document.getElementById('ai-text');
+            aiText.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> AI가 제품 정보(전자기기)를 바탕으로 안내 사항을 생성 중입니다...';
+            aiText.classList.add('text-gray-400');
+            aiText.classList.remove('text-gray-800', 'not-italic');
+
+            // 1.5초 후 결과 출력
+            setTimeout(() => {
+                aiText.classList.remove('text-gray-400', 'italic');
+                aiText.classList.add('text-gray-800');
+                aiText.innerHTML = "해당 물품은 <strong>'고가 전자기기(에어팟)'</strong>로 분류되었습니다. <br><br>👉 <strong>수령 시 주의사항:</strong><br>1. 본인의 스마트폰(블루투스 기기 목록) 페어링 화면을 제시하여 소유자임을 증명해 주세요.<br>2. 신분증(학생증)을 반드시 지참해 주세요.";
+            }, 1500);
+        }
+
+        // 4. 지도 페이지 핀 클릭 시 정보 패널 표시
+        function showMapDetail(title, desc, phone) {
+            document.getElementById('map-info-title').innerText = title;
+            document.getElementById('map-info-desc').innerText = desc;
+            document.getElementById('map-info-phone').innerHTML = `<i class="fa-solid fa-phone mr-1"></i> ${phone}`;
+            
+            // 패널 위로 슬라이드
+            document.getElementById('map-info-panel').classList.remove('translate-y-full');
+        }
+
+        // 5. 관리자 페이지 Google Vision API 시뮬레이션
+        function simulateVisionAPI() {
+            const uploadBox = document.getElementById('upload-box');
+            uploadBox.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-3xl text-dku-blue mb-2"></i><p class="text-sm text-gray-500">Google Vision API로 이미지를 분석 중입니다...</p>';
+            
+            // 2초 후 인식 결과 표시
+            setTimeout(() => {
+                uploadBox.innerHTML = '<i class="fa-solid fa-image text-3xl text-green-500 mb-2"></i><p class="text-sm text-gray-500">사진 업로드 완료</p>';
+                document.getElementById('vision-result').classList.remove('hidden');
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
