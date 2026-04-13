@@ -44,5 +44,9 @@ crawler/.env
 ### Crawler debug screenshots ###
 crawler/*.png
 
+### Crawler downloaded images (already uploaded to S3) ###
+crawler/[0-9]*/
+crawler/[0-9][0-9]*/
+
 ### Local Gradle config (each developer manages their own) ###
 gradle.properties

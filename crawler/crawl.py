@@ -1,5 +1,6 @@
 import os
 import re
+import requests
 import pymysql
 from dotenv import load_dotenv
 from playwright.sync_api import sync_playwright
@@ -11,6 +12,8 @@ BASE_URL  = "https://portal.dankook.ac.kr"
 
 STUDENT_ID = os.getenv("DANKOOK_ID")
 PASSWORD   = os.getenv("DANKOOK_PW")
+
+IMAGE_DIR = os.path.join(os.path.dirname(__file__))
 
 DB_CONFIG = {
     "host":     os.getenv("DB_HOST", "localhost"),
@@ -34,9 +37,10 @@ def login(page):
 
 
 def get_posts(page):
-    """목록 페이지를 순회하며 (url, list_title) 수집"""
+    """목록 페이지를 순회하며 (post_no, url, list_title) 수집 - 게시글 번호 오름차순(오래된 순) 정렬"""
     posts = []
-    for ln in range(1, 4):  # 3페이지 (48건 / 20건)
+    seen = set()
+    for ln in range(1, 6):  # 5페이지
         page.goto(f"{BASE_URL}/p/LOST01?b=56&ls=20&ln={ln}&dm=m")
         page.wait_for_load_state("networkidle")
 
@@ -49,17 +53,19 @@ def get_posts(page):
             if len(cells) < 3:
                 continue
             post_no = cells[0].inner_text().strip()
-            if post_no.isdigit():
-                # 제목 셀(index 2)에서 텍스트 추출
+            if post_no.isdigit() and post_no not in seen:
+                seen.add(post_no)
                 list_title = cells[2].inner_text().strip()
                 url = f"{BASE_URL}/p/LOST01?b=56&ls=20&ln={ln}&dm=r&p={post_no}"
-                posts.append((url, list_title))
+                posts.append((post_no, url, list_title))
 
+    # 게시글 번호 오름차순 정렬 (오래된 것 먼저)
+    posts.sort(key=lambda x: int(x[0]))
     print(f"총 {len(posts)}개 게시물 수집")
     return posts
 
 
-LOCATION_PATTERN = r"\d+호|\d+층|도서관|체육관|학생식당|강의실|행정팀|센터$|관$|버스|광장|정류장"
+LOCATION_PATTERN = r"\d+호|\d+층|도서관|체육관|학생식당|강의실|행정팀|센터$|관$|버스|광장|정류장|화장실|주차장|복도|계단|강당|극장|라운지|매점|편의점|공학관|사무실|열람실|행정실"
 NOISE_WORDS = {"습득", "보관", "습득물", "습득물명", "물품명", "없음", ""}
 
 
@@ -126,7 +132,97 @@ def item_name_from_title(list_title):
     return None
 
 
-def parse_detail(page, url, list_title=""):
+def download_images(page, seq, item_name=None):
+    """게시글 상세 페이지에서 이미지를 다운로드하여 crawler/{seq}/ 에 저장"""
+    save_dir = os.path.join(IMAGE_DIR, str(seq))
+    os.makedirs(save_dir, exist_ok=True)
+
+    cookies = page.context.cookies()
+    cookie_str = "; ".join([f"{c['name']}={c['value']}" for c in cookies])
+
+    # 첨부파일 링크에서 이미지 수집 (<a> 태그)
+    img_urls = []
+    for a in page.query_selector_all("a[href]"):
+        href = a.get_attribute("href") or ""
+        link_text = a.inner_text().strip()
+        if not href.startswith("http"):
+            href = BASE_URL + href
+        # 단국대 포털 파일 다운로드 패턴: a=fd
+        if "/ctt/bb/bulletin" in href and "a=fd" in href:
+            # 링크 텍스트에 이미지 확장자가 포함된 경우만 (이미지 파일인지 확인)
+            if any(ext in link_text.lower() for ext in [".jpg", ".jpeg", ".png", ".gif", ".webp"]):
+                # 링크 텍스트에서 원본 파일명 추출 (예: "드래곤볼 키링.jpg(3781 KB)" → "드래곤볼 키링.jpg")
+                original_name = re.sub(r"\(\d+\s*KB\).*$", "", link_text).strip()
+                # 날짜 접두사 제거 (예: "2026.03.19 카드지갑.jpg", "260401 갤럭시.jpg")
+                original_name = re.sub(r"^\d{4}[.\-]\d{2}[.\-]\d{2}\s*", "", original_name).strip()
+                original_name = re.sub(r"^\d{6}\s*", "", original_name).strip()
+                # 분실물/습득물 등 노이즈 단어 제거
+                original_name = re.sub(r"\s*(분실물|습득물)\s*", " ", original_name).strip()
+                original_name = re.sub(r"\s+", " ", original_name).strip()
+                # KakaoTalk 등 무의미한 파일명은 None 처리 → item_name으로 대체
+                meaningless = ("KakaoTalk_", "IMG_", "DSC", "image", "photo", "Screenshot")
+                if any(original_name.upper().startswith(p.upper()) for p in meaningless):
+                    original_name = None
+                # 정리 후 확장자만 남으면 None 처리
+                if original_name and not re.search(r"[가-힣a-zA-Z0-9]", os.path.splitext(original_name)[0]):
+                    original_name = None
+                img_urls.append((href, original_name))
+        elif any(ext in href.lower() for ext in [".jpg", ".jpeg", ".png", ".gif", ".webp"]):
+            img_urls.append((href, None))
+
+    # 페이지 끝까지 스크롤하여 lazy load 이미지 강제 로드
+    page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+    page.wait_for_timeout(1000)
+
+    # <img> 태그에서 수집 (src, data-src 모두 확인)
+    for img in page.query_selector_all("img"):
+        for attr in ("src", "data-src"):
+            src = img.get_attribute(attr) or ""
+            if not src:
+                continue
+            if not src.startswith("http"):
+                src = BASE_URL + src
+            if any(skip in src for skip in ["/img/", "/icon", "/btn", "/logo", "emoticon", "common", "eXPortal"]):
+                continue
+            # 단국대 게시글 첨부 이미지 패턴
+            if "/ctt/bb/bulletin" in src or any(ext in src.lower() for ext in [".jpg", ".jpeg", ".png", ".gif", ".webp"]):
+                img_urls.append((src, None))
+
+    saved = []
+    idx = 1
+    seen_urls = set()
+    for src, original_name in img_urls:
+        if src in seen_urls:
+            continue
+        seen_urls.add(src)
+
+        try:
+            resp = requests.get(src, headers={"Cookie": cookie_str}, timeout=10)
+            content_type = resp.headers.get("Content-Type", "")
+            if resp.status_code == 200 and "image" in content_type:
+                # 30KB 미만은 UI 이미지로 판단하고 건너뜀
+                if len(resp.content) < 30 * 1024:
+                    continue
+                ext = content_type.split("/")[-1].split(";")[0]
+                if ext not in ("jpeg", "jpg", "png", "gif", "webp"):
+                    ext = "jpg"
+                if original_name:
+                    # 원본 파일명 사용 (첨부파일 링크에서 추출)
+                    filename = re.sub(r'[\\/*?:"<>|]', "", original_name).strip()
+                else:
+                    base_name = re.sub(r'[\\/*?:"<>|]', "", item_name or "image").strip() or "image"
+                    filename = f"{base_name}_{idx}.{ext}"
+                with open(os.path.join(save_dir, filename), "wb") as f:
+                    f.write(resp.content)
+                saved.append(filename)
+                idx += 1
+        except Exception as e:
+            print(f"  이미지 다운로드 실패 ({src}): {e}")
+
+    return saved
+
+
+def parse_detail(page, seq, url, list_title=""):
     page.goto(url)
     page.wait_for_load_state("networkidle")
 
@@ -156,6 +252,18 @@ def parse_detail(page, url, list_title=""):
     if not item_name and list_title:
         item_name = item_name_from_title(list_title)
 
+    # 4) 제목 대괄호 내용이 더 구체적이면 우선 적용 (분실물/습득물 포함 시 건너뜀)
+    if list_title:
+        bracket = re.search(r"\[(.+?)\]", list_title)
+        if bracket:
+            bracket_val = bracket.group(1).strip()
+            if (bracket_val
+                    and not is_location(bracket_val)
+                    and bracket_val not in NOISE_WORDS
+                    and "분실물" not in bracket_val
+                    and "습득물" not in bracket_val):
+                item_name = bracket_val
+
     found_location  = normalize_location(extract_field(body_text, "습득장소"))
     stored_location = normalize_location(extract_field(body_text, "보관장소"))
     stored_date     = normalize_date(extract_field(body_text, "습득일시") or extract_field(body_text, "습득일"))
@@ -164,6 +272,11 @@ def parse_detail(page, url, list_title=""):
 
     color     = extract_color((item_name or "") + " " + (special_note or ""))
     item_type = item_name  # 물품명이 곧 종류
+
+    # 이미지 다운로드
+    images = download_images(page, seq, item_name)
+    if images:
+        print(f"  이미지 {len(images)}개 저장: crawler/{seq}/")
 
     return {
         "item_name":       item_name,
@@ -240,21 +353,30 @@ def extract_type(title):
 
 
 def init_db(conn):
+    """테이블이 없을 때만 생성 (기존 데이터 유지)"""
     with conn.cursor() as cur:
-        cur.execute("DROP TABLE IF EXISTS lost_item")
         cur.execute("""
-            CREATE TABLE lost_item (
+            CREATE TABLE IF NOT EXISTS lost_item (
                 id              INT AUTO_INCREMENT PRIMARY KEY,
+                post_no         INT UNIQUE,
                 item_name       VARCHAR(255),
                 found_location  VARCHAR(255),
                 stored_location VARCHAR(255),
                 stored_date     DATE,
                 contact         VARCHAR(100),
                 color           VARCHAR(50),
-                item_type       VARCHAR(255)
+                item_type       VARCHAR(255),
+                image_url       VARCHAR(500)
             ) CHARACTER SET utf8mb4
         """)
     conn.commit()
+
+
+def get_max_post_no(conn):
+    """DB에 저장된 가장 최신 게시글 번호 반환 (없으면 0)"""
+    with conn.cursor() as cur:
+        cur.execute("SELECT COALESCE(MAX(post_no), 0) FROM lost_item")
+        return cur.fetchone()[0]
 
 
 def save_to_db(items):
@@ -265,12 +387,12 @@ def save_to_db(items):
             for item in items:
                 cur.execute("""
                     INSERT INTO lost_item
-                        (item_name, found_location, stored_location, stored_date,
-                         contact, color, item_type)
+                        (post_no, item_name, found_location, stored_location, stored_date,
+                         contact, color, item_type, image_url)
                     VALUES
-                        (%(item_name)s, %(found_location)s, %(stored_location)s,
-                         %(stored_date)s, %(contact)s, %(color)s, %(item_type)s)
-                """, item)
+                        (%(post_no)s, %(item_name)s, %(found_location)s, %(stored_location)s,
+                         %(stored_date)s, %(contact)s, %(color)s, %(item_type)s, %(image_url)s)
+                """, {**item, "image_url": None})
         conn.commit()
         print(f"{len(items)}개 저장 완료")
     finally:
@@ -278,25 +400,46 @@ def save_to_db(items):
 
 
 def main():
+    # DB 연결해서 마지막 post_no 확인
+    conn = pymysql.connect(**DB_CONFIG)
+    init_db(conn)
+    max_post_no = get_max_post_no(conn)
+    conn.close()
+
+    if max_post_no > 0:
+        print(f"마지막 저장된 게시글 번호: #{max_post_no} → 이후 게시글만 크롤링")
+    else:
+        print("첫 실행: 전체 게시글 크롤링")
+
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=False)
         page = browser.new_page()
 
         login(page)
-        posts = get_posts(page)
+        all_posts = get_posts(page)
 
+        # 이미 저장된 게시글 제외
+        new_posts = [(pno, url, title) for pno, url, title in all_posts if int(pno) > max_post_no]
+        print(f"새 게시글 {len(new_posts)}개 크롤링 시작")
+
+        # seq는 기존 DB 마지막 id 이후부터 시작
+        start_seq = max_post_no + 1
         items = []
-        for i, (url, list_title) in enumerate(posts, 1):
+        for seq, (post_no, url, list_title) in enumerate(new_posts, start_seq):
             try:
-                item = parse_detail(page, url, list_title)
+                item = parse_detail(page, seq, url, list_title)
+                item["post_no"] = int(post_no)
                 items.append(item)
-                print(f"[{i}/{len(posts)}] 파싱 완료: {item['item_name']}")
+                print(f"[{seq}] 파싱 완료: {item['item_name']} (게시글 #{post_no} → 폴더 {seq})")
             except Exception as e:
-                print(f"[{i}/{len(posts)}] 파싱 실패 ({url}): {e}")
+                print(f"[{seq}] 파싱 실패 ({url}): {e}")
 
         browser.close()
 
-    save_to_db(items)
+    if items:
+        save_to_db(items)
+    else:
+        print("새 게시글이 없습니다.")
 
 
 if __name__ == "__main__":
