@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>단디 - 물품 상세</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { dku: { blue: '#0055A6', light: '#e0f2fe', hover: '#004080' } },
+          fontFamily: { sans: ['"Noto Sans KR"', 'sans-serif'] }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-slate-50 pb-20 font-sans">
+  <header class="bg-white border-b shadow-sm">
+    <div class="max-w-md mx-auto p-4 flex items-center gap-3">
+      <a href="./main.html" class="text-slate-500"><i class="fa-solid fa-arrow-left"></i></a>
+      <h1 class="font-bold text-lg">물품 상세 화면</h1>
+    </div>
+  </header>
+
+  <main class="max-w-md mx-auto p-4 space-y-4">
+    <div class="h-44 rounded-2xl bg-slate-200 flex items-center justify-center text-slate-600 shadow-sm border border-slate-100">[제품 사진]</div>
+
+    <section class="bg-white border border-slate-100 rounded-2xl p-4 space-y-2 shadow-sm">
+      <p class="text-sm text-dku-blue font-semibold">카테고리: 전자기기</p>
+      <h2 class="text-xl font-bold">에어팟 프로 오른쪽 유닛</h2>
+      <p class="text-sm text-slate-600">습득 위치: 소프트웨어ICT관 1층 정수기 앞</p>
+      <p class="text-sm text-slate-600">상세정보: 케이스 없이 유닛만 있음</p>
+      <p class="text-sm text-slate-600">종류: 무선 이어폰</p>
+    </section>
+
+    <section class="bg-dku-light border border-blue-200 rounded-2xl p-4 shadow-sm">
+      <h3 class="font-semibold text-dku-blue"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>생성형 AI 수령 주의사항</h3>
+      <p id="ai-text" class="text-sm text-slate-600 mt-2">AI가 제품 정보를 분석 중...</p>
+      <button onclick="runAiGuide()" class="mt-3 text-sm bg-dku-blue text-white px-3 py-2 rounded-lg">AI 안내 생성</button>
+    </section>
+
+    <div class="grid grid-cols-2 gap-3">
+      <a href="./map.html" class="text-center bg-dku-blue text-white py-3 rounded-xl font-semibold">주인 찾아주세요</a>
+      <button onclick="alert('채팅/수령 신청 기능 연결 예정')" class="bg-white border border-slate-200 py-3 rounded-xl font-semibold">채팅/수령 신청</button>
+    </div>
+  </main>
+
+  <nav class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-[0_-2px_10px_rgba(0,0,0,0.06)] z-50">
+    <div class="max-w-md mx-auto grid grid-cols-4 text-center text-xs">
+      <a href="./main.html" class="py-2 text-slate-500"><i class="fa-solid fa-house block text-lg mb-1"></i>홈</a>
+      <a href="./map.html" class="py-2 text-slate-500"><i class="fa-solid fa-map-location-dot block text-lg mb-1"></i>지도</a>
+      <a href="./admin-register.html" class="py-2 text-slate-500"><i class="fa-solid fa-camera block text-lg mb-1"></i>관리자</a>
+      <a href="./mypage.html" class="py-2 text-slate-500"><i class="fa-solid fa-user block text-lg mb-1"></i>마이</a>
+    </div>
+  </nav>
+
+  <script>
+    function runAiGuide() {
+      const el = document.getElementById('ai-text');
+      el.textContent = "분석중... 카테고리/종류를 확인하고 있습니다.";
+      setTimeout(() => {
+        el.innerHTML = "분석 결과: <strong>전자기기 > 무선이어폰</strong><br>수령 시 주의사항: 1) 본인 블루투스 페어링 기록 제시 2) 학생증 지참 3) 관리실 장부 서명 후 수령";
+      }, 1100);
+    }
+  </script>
+</body>
+</html>
