@@ -102,6 +102,7 @@ org.gradle.java.installations.paths=C:\\Users\\{사용자명}\\AppData\\Local\\P
 AWS_ACCESS_KEY=<팀 노션 참고>
 AWS_SECRET_KEY=<팀 노션 참고>
 S3_BUCKET_NAME=dandi-lost-items
+DB_PASSWORD=<팀 노션 참고>
 ```
 
 > `.env` 파일은 `.gitignore`에 등록되어 있어 git에 올라가지 않습니다.
