@@ -75,7 +75,21 @@ org.gradle.java.installations.paths=C:\\Users\\{사용자명}\\AppData\\Local\\P
 
 ---
 
-### 5. MySQL 실행 (로컬 개발용)
+### 5. .env 파일 설정 (필수)
+
+프로젝트 루트(`DANDI_Backend/`)에 `.env` 파일을 생성하고 아래 내용을 붙여넣습니다:
+
+```
+AWS_ACCESS_KEY=<팀 노션 참고>
+AWS_SECRET_KEY=<팀 노션 참고>
+S3_BUCKET_NAME=dandi-lost-items
+```
+
+> `.env` 파일은 `.gitignore`에 등록되어 있어 git에 올라가지 않습니다.
+
+---
+
+### 6. MySQL 실행 (로컬 개발용) 
 
 ```bash
 docker-compose up -d
@@ -89,22 +103,9 @@ docker ps
 
 ---
 
-### 6. Spring Boot 실행
+### 7. Spring Boot 실행
 
-**로컬 DB (Docker MySQL):**
 ```bash
-./gradlew bootRun
-```
-
-**프로덕션 DB (AWS RDS):**
-
-PowerShell:
-```powershell
-$env:SPRING_PROFILES_ACTIVE="prod"
-$env:DB_PASSWORD="비밀번호"
-$env:AWS_ACCESS_KEY="키"
-$env:AWS_SECRET_KEY="시크릿키"
-$env:S3_BUCKET_NAME="dandi-lost-items"
 ./gradlew bootRun
 ```
 
