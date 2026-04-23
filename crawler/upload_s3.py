@@ -1,4 +1,5 @@
 import os
+import re
 import pymysql
 import boto3
 from dotenv import load_dotenv
@@ -21,6 +22,26 @@ DB_CONFIG = {
 }
 
 IMAGE_EXTS = (".jpg", ".jpeg", ".png", ".gif", ".webp")
+
+
+def clean_filenames(folder_path):
+    """기존 폴더의 _ 시작 파일명 및 _1 suffix 정리"""
+    if not os.path.isdir(folder_path):
+        return
+    for filename in sorted(os.listdir(folder_path)):
+        if not filename.lower().endswith(IMAGE_EXTS):
+            continue
+        name, ext = os.path.splitext(filename)
+        new_name = re.sub(r"^[_\-\s]+", "", name).strip()   # 선행 _ - 제거
+        new_name = re.sub(r"_1$", "", new_name).strip()      # 말미 _1 제거
+        new_name = new_name or "image"
+        new_filename = new_name + ext
+        if new_filename != filename:
+            old_path = os.path.join(folder_path, filename)
+            new_path = os.path.join(folder_path, new_filename)
+            if not os.path.exists(new_path):
+                os.rename(old_path, new_path)
+                print(f"  파일명 정리: {filename} → {new_filename}")
 
 
 def get_first_image(folder_path):
@@ -68,6 +89,7 @@ def main():
         updated = 0
         for (item_id,) in rows:
             folder = os.path.join(IMAGE_DIR, str(item_id))
+            clean_filenames(folder)
             image_path = get_first_image(folder)
 
             if not image_path:

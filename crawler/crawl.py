@@ -156,6 +156,8 @@ def download_images(page, seq, item_name=None):
                 # 날짜 접두사 제거 (예: "2026.03.19 카드지갑.jpg", "260401 갤럭시.jpg")
                 original_name = re.sub(r"^\d{4}[.\-]\d{2}[.\-]\d{2}\s*", "", original_name).strip()
                 original_name = re.sub(r"^\d{6}\s*", "", original_name).strip()
+                # 날짜 제거 후 남은 선행 _ - 공백 제거
+                original_name = re.sub(r"^[_\-\s]+", "", original_name).strip()
                 # 분실물/습득물 등 노이즈 단어 제거
                 original_name = re.sub(r"\s*(분실물|습득물)\s*", " ", original_name).strip()
                 original_name = re.sub(r"\s+", " ", original_name).strip()
@@ -211,7 +213,8 @@ def download_images(page, seq, item_name=None):
                     filename = re.sub(r'[\\/*?:"<>|]', "", original_name).strip()
                 else:
                     base_name = re.sub(r'[\\/*?:"<>|]', "", item_name or "image").strip() or "image"
-                    filename = f"{base_name}_{idx}.{ext}"
+                    # 첫 번째 이미지는 _1 없이, 두 번째부터 _2, _3 ...
+                    filename = f"{base_name}.{ext}" if idx == 1 else f"{base_name}_{idx}.{ext}"
                 with open(os.path.join(save_dir, filename), "wb") as f:
                     f.write(resp.content)
                 saved.append(filename)
