@@ -38,7 +38,8 @@ bin/
 
 ### Mac OS ###
 .DS_Store
-### Crawler secrets ###
+### Secrets ###
+.env
 crawler/.env
 
 ### Crawler debug screenshots ###
