@@ -8,11 +8,9 @@
 
 | 브랜치 | 설명 |
 |--------|------|
-| `main` | 기본 Spring Boot 프로젝트 설정 |
+| `main` | Spring Boot API 서버 (통합 브랜치) |
 | `database` | AWS RDS MySQL 연결 설정 |
-| `crawling` | 단국대 분실물 게시판 크롤러 + S3 이미지 업로드 + REST API |
-
-> **주의:** 크롤링 관련 작업(crawl.py, upload_s3.py 등)은 반드시 `crawling` 브랜치에서만 진행합니다. 다른 브랜치에서 크롤러를 수정하거나 실행하지 않습니다.
+| `crawling` | 단국대 분실물 게시판 크롤러 + S3 이미지 업로드 |
 
 ---
 
@@ -20,6 +18,7 @@
 
 - Java 17
 - Docker Desktop
+- Python 3.10+
 
 ---
 
@@ -95,7 +94,21 @@ org.gradle.java.installations.paths=C:\\Users\\{사용자명}\\AppData\\Local\\P
 
 ---
 
-### 5. MySQL 실행
+### 5. .env 파일 설정 (필수)
+
+프로젝트 루트(`DANDI_Backend/`)에 `.env` 파일을 생성하고 아래 내용을 붙여넣습니다:
+
+```
+AWS_ACCESS_KEY=<팀 노션 참고>
+AWS_SECRET_KEY=<팀 노션 참고>
+S3_BUCKET_NAME=dandi-lost-items
+```
+
+> `.env` 파일은 `.gitignore`에 등록되어 있어 git에 올라가지 않습니다.
+
+---
+
+### 6. MySQL 실행
 
 ```bash
 docker-compose up -d
@@ -111,7 +124,7 @@ docker ps
 
 ---
 
-### 6. Spring Boot 실행
+### 7. Spring Boot 실행
 
 ```bash
 ./gradlew bootRun
@@ -122,13 +135,37 @@ docker ps
 Started Main in x.xxx seconds
 ```
 
-브라우저에서 확인: [http://localhost:8080](http://localhost:8080)
-
-> 브라우저에서 **404 Whitelabel Error Page**가 뜨는 것은 정상입니다. 아직 루트 엔드포인트가 없기 때문이며, 서버는 정상 동작 중입니다.
+> 브라우저에서 **404 Whitelabel Error Page**가 뜨는 것은 정상입니다. 루트 엔드포인트가 없기 때문이며, 서버는 정상 동작 중입니다.
 
 ---
 
-## DB 접속 정보
+## REST API
+
+서버 기본 URL: `http://localhost:8080`
+
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/api/lost-items` | 전체 분실물 목록 조회 |
+| GET | `/api/lost-items/{id}` | 단일 분실물 조회 |
+| POST | `/api/lost-items` | 분실물 등록 (multipart/form-data) |
+| DELETE | `/api/lost-items/{id}` | 분실물 삭제 |
+
+**POST 요청 파라미터:**
+
+| 파라미터 | 타입 | 설명 |
+|----------|------|------|
+| itemName | String | 물건 이름 |
+| foundLocation | String | 발견 위치 |
+| storedLocation | String | 보관 위치 |
+| storedDate | String | 보관 날짜 (yyyy-MM-dd) |
+| contact | String | 연락처 |
+| color | String | 색상 |
+| itemType | String | 물건 종류 |
+| image | MultipartFile | 이미지 파일 (선택) |
+
+---
+
+## DB 정보
 
 ### 로컬 개발용 (Docker MySQL)
 
@@ -140,7 +177,59 @@ Started Main in x.xxx seconds
 | 사용자 | dandi |
 | 비밀번호 | dandi1234 |
 
-`docker-compose up -d` 실행 후 사용합니다.
+### 공용 DB (AWS RDS)
+
+| 항목 | 값 |
+|------|-----|
+| Host | dandi-db.cdocgw0s68cj.ap-northeast-2.rds.amazonaws.com |
+| Port | 3306 |
+| DB 이름 | dandidb |
+| 사용자 | dandi |
+| 비밀번호 | 팀 노션 참고 |
+
+현재 저장된 데이터: 단국대(죽전) 분실물 게시판 크롤링 데이터 **48건**
+
+---
+
+## 크롤러 (crawler/)
+
+단국대 포털 분실물 게시판에서 분실물 데이터를 수집합니다.
+
+### 환경 설정
+
+```bash
+cd crawler
+pip install -r requirements.txt
+playwright install chromium
+```
+
+`crawler/.env` 파일을 생성하고 아래 내용을 작성합니다:
+
+| 변수 | 설명 |
+|------|------|
+| DANKOOK_ID | 단국대 포털 학번 |
+| DANKOOK_PW | 단국대 포털 비밀번호 |
+| DB_HOST | RDS 호스트 |
+| DB_PORT | DB 포트 (기본 3306) |
+| DB_NAME | DB 이름 |
+| DB_USER | DB 사용자 |
+| DB_PASSWORD | DB 비밀번호 |
+| AWS_ACCESS_KEY | AWS IAM 액세스 키 |
+| AWS_SECRET_KEY | AWS IAM 시크릿 키 |
+| AWS_REGION | AWS 리전 (ap-northeast-2) |
+| S3_BUCKET_NAME | S3 버킷 이름 |
+
+### 실행 순서
+
+**1단계 — 분실물 데이터 및 이미지 크롤링:**
+```bash
+python crawl.py
+```
+
+**2단계 — S3 이미지 업로드:**
+```bash
+python upload_s3.py
+```
 
 ---
 
