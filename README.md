@@ -189,6 +189,23 @@ Started Main in x.xxx seconds
 
 현재 저장된 데이터: 단국대(죽전) 분실물 게시판 크롤링 데이터 **48건**
 
+#### DB 스키마
+
+```sql
+CREATE TABLE lost_item (
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    post_no         INT UNIQUE,
+    item_name       VARCHAR(255),
+    found_location  VARCHAR(255),
+    stored_location VARCHAR(255),
+    stored_date     DATE,
+    contact         VARCHAR(100),
+    color           VARCHAR(50),
+    item_type       VARCHAR(255),
+    image_url       VARCHAR(500)
+) CHARACTER SET utf8mb4;
+```
+
 ---
 
 ## 크롤러 (crawler/)

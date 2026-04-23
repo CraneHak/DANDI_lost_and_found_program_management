@@ -38,9 +38,13 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
 ### Secrets ###
 .env
 crawler/.env
+
+### Spring Boot prod config (contains DB credentials) ###
+src/main/resources/application-prod.properties
 
 ### Crawler debug screenshots ###
 crawler/*.png
