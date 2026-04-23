@@ -109,7 +109,9 @@ DB_PASSWORD=<팀 노션 참고>
 
 ---
 
-### 6. MySQL 실행
+### 6. MySQL 실행 (선택)
+
+> 실제 서비스는 AWS RDS를 사용합니다. 로컬 MySQL은 RDS 없이 독립적으로 테스트할 때만 활용하세요.
 
 ```bash
 docker-compose up -d
