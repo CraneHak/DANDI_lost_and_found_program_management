@@ -13,6 +13,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 
 @Component
 public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
@@ -61,8 +62,9 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
+            boolean admin = isAdmin(decodedUser.uid(), email);
             FirebaseAuthenticationToken authentication =
-                    new FirebaseAuthenticationToken(decodedUser.uid(), email);
+                    new FirebaseAuthenticationToken(decodedUser.uid(), email, admin);
             SecurityContextHolder.getContext().setAuthentication(authentication);
             filterChain.doFilter(request, response);
         } catch (InvalidFirebaseTokenException ex) {
@@ -79,6 +81,25 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
             return true;
         }
         return PATH_MATCHER.match("/api/public/**", path);
+    }
+
+    private boolean isAdmin(String uid, String email) {
+        if (uid != null) {
+            for (String adminUid : firebaseProperties.getAdminUids()) {
+                if (uid.equals(adminUid != null ? adminUid.trim() : null)) {
+                    return true;
+                }
+            }
+        }
+        if (email != null) {
+            String normalized = email.toLowerCase(Locale.ROOT);
+            for (String adminEmail : firebaseProperties.getAdminEmails()) {
+                if (adminEmail != null && normalized.equals(adminEmail.trim().toLowerCase(Locale.ROOT))) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private void writeError(HttpServletResponse response, HttpStatus status, String message) throws IOException {
