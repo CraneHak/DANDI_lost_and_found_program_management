@@ -17,7 +17,7 @@ public class Notice {
     @Column(name = "message", columnDefinition = "TEXT")
     private String message;
 
-    @Column(name = "read", nullable = false)
+    @Column(name = "`read`", nullable = false)
     private boolean read = false;
 
     @Column(name = "created_at", nullable = false)
