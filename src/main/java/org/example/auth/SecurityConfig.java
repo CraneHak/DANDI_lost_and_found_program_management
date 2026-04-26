@@ -27,7 +27,12 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/public/**").permitAll()
+<<<<<<< HEAD
                         .requestMatchers("/api/reports/**").permitAll()
+=======
+                        .requestMatchers("/api/notices/**").permitAll()
+                        .requestMatchers("/api/users/keywords/**").permitAll()
+>>>>>>> 5c979f8 (feat: implement /api/notices and /api/users/keywords endpoints)
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()
