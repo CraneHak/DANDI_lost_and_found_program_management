@@ -1,6 +1,6 @@
 package org.example.aiguidance;
 
-import org.example.ai.OpenAiChatClient;
+import org.example.ai.LlmChatClient;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -20,10 +20,10 @@ public class AiGuidanceService {
             - 불필요한 서론/제목/번호 매기기 금지
             """;
 
-    private final OpenAiChatClient openAiChatClient;
+    private final LlmChatClient llmChatClient;
 
-    public AiGuidanceService(OpenAiChatClient openAiChatClient) {
-        this.openAiChatClient = openAiChatClient;
+    public AiGuidanceService(LlmChatClient llmChatClient) {
+        this.llmChatClient = llmChatClient;
     }
 
     public AiGuidanceResponse generate(AiGuidanceRequest request) {
@@ -37,7 +37,7 @@ public class AiGuidanceService {
                 blankToDash(request.productDescription())
         );
 
-        String guidance = openAiChatClient.chat(SYSTEM_PROMPT, userPrompt);
+        String guidance = llmChatClient.chat(SYSTEM_PROMPT, userPrompt);
         return new AiGuidanceResponse(guidance);
     }
 
