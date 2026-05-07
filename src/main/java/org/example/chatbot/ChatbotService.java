@@ -1,6 +1,6 @@
 package org.example.chatbot;
 
-import org.example.ai.OpenAiChatClient;
+import org.example.ai.LlmChatClient;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -17,14 +17,14 @@ public class ChatbotService {
             4) 답변은 한국어로 2~4문장, 간결하게 작성한다.
             """;
 
-    private final OpenAiChatClient openAiChatClient;
+    private final LlmChatClient llmChatClient;
 
-    public ChatbotService(OpenAiChatClient openAiChatClient) {
-        this.openAiChatClient = openAiChatClient;
+    public ChatbotService(LlmChatClient llmChatClient) {
+        this.llmChatClient = llmChatClient;
     }
 
     public ChatbotResponse chat(ChatbotRequest request) {
-        String answer = openAiChatClient.chat(SYSTEM_PROMPT, request.message());
+        String answer = llmChatClient.chat(SYSTEM_PROMPT, request.message());
         return new ChatbotResponse(answer);
     }
 }

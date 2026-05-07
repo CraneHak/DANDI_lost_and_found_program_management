@@ -17,20 +17,20 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class OpenAiChatClient {
+public class LlmChatClient {
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
 
-    @Value("${openai.api-key:}")
+    @Value("${llm.api-key:}")
     private String apiKey;
 
-    @Value("${openai.base-url:https://api.openai.com/v1}")
+    @Value("${llm.base-url:https://generativelanguage.googleapis.com/v1beta/openai}")
     private String baseUrl;
 
-    @Value("${openai.model:gpt-5-mini}")
+    @Value("${llm.model:gemini-1.5-flash}")
     private String model;
 
-    public OpenAiChatClient(ObjectMapper objectMapper) {
+    public LlmChatClient(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
@@ -39,7 +39,7 @@ public class OpenAiChatClient {
 
     public String chat(String systemPrompt, String userPrompt) {
         if (apiKey == null || apiKey.isBlank()) {
-            throw new IllegalStateException("OPENAI_API_KEY is not configured.");
+            throw new IllegalStateException("LLM_API_KEY is not configured.");
         }
 
         Map<String, Object> body = Map.of(
@@ -62,20 +62,20 @@ public class OpenAiChatClient {
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() >= 400) {
-                throw new IllegalStateException("OpenAI API error: " + response.statusCode());
+                throw new IllegalStateException("LLM API error: " + response.statusCode());
             }
 
             JsonNode root = objectMapper.readTree(response.body());
             JsonNode content = root.path("choices").path(0).path("message").path("content");
             if (content.isMissingNode() || content.isNull()) {
-                throw new IllegalStateException("OpenAI response has no content.");
+                throw new IllegalStateException("LLM response has no content.");
             }
             return content.asText().trim();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("Failed to call OpenAI API.", e);
+            throw new IllegalStateException("Failed to call LLM API.", e);
         } catch (IOException e) {
-            throw new IllegalStateException("Failed to call OpenAI API.", e);
+            throw new IllegalStateException("Failed to call LLM API.", e);
         }
     }
 }
