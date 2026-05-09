@@ -1,5 +1,6 @@
 package org.example.report;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -30,9 +31,11 @@ public class Report {
     @Column(name = "status", nullable = false)
     private ReportStatus status = ReportStatus.PENDING;
 
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     @Column(name = "picked_up_at")
     private LocalDateTime pickedUpAt;
 
