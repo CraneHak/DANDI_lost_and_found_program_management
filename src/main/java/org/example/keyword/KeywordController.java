@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @RestController
@@ -53,11 +54,13 @@ public class KeywordController {
             String keyword,
             String createdAt
     ) {
+        private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+
         static KeywordResponse from(Keyword k) {
             return new KeywordResponse(
                     String.valueOf(k.getId()),
                     k.getKeyword(),
-                    k.getCreatedAt() != null ? k.getCreatedAt().toString() : null
+                    k.getCreatedAt() != null ? k.getCreatedAt().format(FMT) : null
             );
         }
     }

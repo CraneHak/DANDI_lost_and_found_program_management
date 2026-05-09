@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
@@ -89,6 +90,8 @@ public class ReportController {
             String createdAt,
             String pickedUpAt
     ) {
+        private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+
         static ReportResponse from(Report r) {
             return new ReportResponse(
                     String.valueOf(r.getId()),
@@ -98,8 +101,8 @@ public class ReportController {
                     r.getLocation(),
                     r.getMemo(),
                     r.getStatus(),
-                    r.getCreatedAt() != null ? r.getCreatedAt().toString() : null,
-                    r.getPickedUpAt() != null ? r.getPickedUpAt().toString() : null
+                    r.getCreatedAt() != null ? r.getCreatedAt().format(FMT) : null,
+                    r.getPickedUpAt() != null ? r.getPickedUpAt().format(FMT) : null
             );
         }
     }
