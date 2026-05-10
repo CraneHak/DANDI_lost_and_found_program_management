@@ -1,4 +1,3 @@
--- feature/chatbot, feature/qr 브랜치에서 사용
 CREATE TABLE IF NOT EXISTS pickup_pass (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     token VARCHAR(120) NOT NULL UNIQUE,

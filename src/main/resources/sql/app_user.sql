@@ -1,4 +1,3 @@
--- feature/auth-firebase-domain-gate 브랜치에서 사용
 CREATE TABLE IF NOT EXISTS app_user (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     firebase_uid VARCHAR(128) NOT NULL UNIQUE,
