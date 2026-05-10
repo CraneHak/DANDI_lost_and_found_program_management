@@ -4,6 +4,90 @@
 
 ---
 
+## ⚡ 개인 설정 필수 항목 (처음 실행 전 반드시 완료)
+
+> 아래 4가지는 git에 올라가지 않으므로, 클론 후 **각자 직접 생성·설정**해야 합니다.
+
+---
+
+### 1. `gradle.properties` — Java 17 경로 지정
+
+프로젝트 루트에 `gradle.properties` 파일을 생성합니다.
+
+```properties
+org.gradle.java.installations.paths=C:\\Users\\{사용자명}\\AppData\\Local\\Programs\\Eclipse Adoptium\\jdk-17.0.x.x-hotspot
+```
+
+> `{사용자명}`과 버전 번호를 실제 설치 경로로 수정하세요. 경로 구분자는 `\\`를 사용합니다.
+
+---
+
+### 2. `.env` — 환경변수 파일
+
+프로젝트 루트에 `.env` 파일을 생성하고 아래 값을 채웁니다. (팀 노션 참고)
+
+```dotenv
+# AWS
+AWS_ACCESS_KEY=<팀 노션 참고>
+AWS_SECRET_KEY=<팀 노션 참고>
+S3_BUCKET_NAME=dandi-lost-items
+
+# DB
+DB_PASSWORD=<팀 노션 참고>
+
+# Firebase Admin SDK
+FIREBASE_ADMIN_SDK_PATH=C:\Users\{사용자명}\.secrets\firebase\myauth.json
+FIREBASE_ALLOWED_DOMAIN=dankook.ac.kr
+FIREBASE_ADMIN_UIDS=<팀 노션 참고>
+FIREBASE_ADMIN_EMAILS=<팀 노션 참고>
+
+# Google Cloud Vision API
+GOOGLE_APPLICATION_CREDENTIALS=C:\Users\{사용자명}\.secrets\cloudvisionapi\cloudvisionapi_cash.json
+
+# LLM (Gemini)
+LLM_API_KEY=<팀 노션 참고>
+LLM_MODEL=gemini-1.5-flash
+LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
+
+# 챗봇 제한
+CHATBOT_RATE_LIMIT_MINUTE=12
+CHATBOT_RATE_LIMIT_HOUR=20
+CHATBOT_RATE_LIMIT_DAY=30
+CHATBOT_SANCTION_FIRST_BLOCK_MINUTES=15
+CHATBOT_SANCTION_SECOND_BLOCK_HOURS=24
+```
+
+---
+
+### 3. Firebase Admin SDK JSON 파일 배치
+
+팀 노션에서 Firebase Admin SDK 서비스 계정 키(`myauth.json`)를 다운로드하고, `.env`의 `FIREBASE_ADMIN_SDK_PATH`에 지정한 경로에 배치합니다.
+
+```
+예) C:\Users\{사용자명}\.secrets\firebase\myauth.json
+```
+
+---
+
+### 4. Google Cloud Vision API 자격증명 JSON 배치 + 시스템 환경변수 등록
+
+1. 팀 노션에서 Cloud Vision API 자격증명 JSON(`cloudvisionapi_cash.json`)을 다운로드해 지정 경로에 배치합니다.
+
+   ```
+   예) C:\Users\{사용자명}\.secrets\cloudvisionapi\cloudvisionapi_cash.json
+   ```
+
+2. 시스템 환경변수에 `GOOGLE_APPLICATION_CREDENTIALS`를 등록합니다 (OS 재시작 또는 터미널 재실행 필요).
+
+   ```powershell
+   # PowerShell (관리자)
+   [System.Environment]::SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", "C:\Users\{사용자명}\.secrets\cloudvisionapi\cloudvisionapi_cash.json", "User")
+   ```
+
+---
+
+---
+
 ## 브랜치 구조
 
 | 브랜치 | 설명 |
