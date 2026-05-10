@@ -1,16 +1,13 @@
 package org.example.pickup;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import jakarta.persistence.LockModeType;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 
 public interface PickupPassRepository extends JpaRepository<PickupPass, Long> {
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select p from PickupPass p join fetch p.lostItem where p.token = :token")
     Optional<PickupPass> findByTokenForUpdate(@Param("token") String token);
 

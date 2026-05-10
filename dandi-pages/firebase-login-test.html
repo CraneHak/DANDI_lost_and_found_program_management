@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Firebase Login Test</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 40px;
+      line-height: 1.5;
+    }
+    button {
+      padding: 10px 16px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    code {
+      background: #f3f3f3;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Firebase Google Login Test</h1>
+  <p>버튼을 누르면 구글 로그인 후 ID 토큰을 콘솔과 화면에 출력합니다.</p>
+  <button id="login">Google Login</button>
+  <p id="result"></p>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCMrTrhqMQuwoSXCrTjaR0GxPOCYW7BHOc",
+      authDomain: "myauth-26083.firebaseapp.com",
+      projectId: "myauth-26083",
+      storageBucket: "myauth-26083.firebasestorage.app",
+      messagingSenderId: "478482631362",
+      appId: "1:478482631362:web:0ea7e6eafd1670aca1895b",
+      measurementId: "G-GPNBHEJ5KY"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const resultEl = document.getElementById("result");
+
+    document.getElementById("login").addEventListener("click", async () => {
+      try {
+        const provider = new GoogleAuthProvider();
+        const loginResult = await signInWithPopup(auth, provider);
+        const idToken = await loginResult.user.getIdToken(true);
+
+        console.log("ID_TOKEN:", idToken);
+        resultEl.textContent = "ID 토큰이 콘솔(F12)에 출력되었습니다.";
+      } catch (error) {
+        console.error(error);
+        resultEl.textContent = "로그인 실패: " + (error?.message ?? "unknown error");
+      }
+    });
+  </script>
+</body>
+</html>
