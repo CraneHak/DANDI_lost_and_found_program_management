@@ -26,4 +26,12 @@ public class NoticeService {
         notice.setRead(true);
         return noticeRepository.save(notice);
     }
+
+    @Transactional
+    public void delete(Long id) {
+        if (!noticeRepository.existsById(id)) {
+            throw new NoticeNotFoundException(id);
+        }
+        noticeRepository.deleteById(id);
+    }
 }

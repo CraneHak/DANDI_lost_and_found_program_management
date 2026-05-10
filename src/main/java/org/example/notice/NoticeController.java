@@ -35,6 +35,16 @@ public class NoticeController {
         }
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        try {
+            noticeService.delete(id);
+            return ResponseEntity.noContent().build();
+        } catch (NoticeNotFoundException ex) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage());
+        }
+    }
+
     // ── Response record ──────────────────────────────────────────────────────
 
     public record NoticeResponse(
