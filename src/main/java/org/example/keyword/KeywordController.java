@@ -29,8 +29,12 @@ public class KeywordController {
 
     @PostMapping
     public ResponseEntity<KeywordResponse> add(@Valid @RequestBody AddKeywordRequest body) {
-        Keyword saved = keywordService.add(body.keyword());
-        return ResponseEntity.status(HttpStatus.CREATED).body(KeywordResponse.from(saved));
+        try {
+            Keyword saved = keywordService.add(body.keyword());
+            return ResponseEntity.status(HttpStatus.CREATED).body(KeywordResponse.from(saved));
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        }
     }
 
     @DeleteMapping("/{id}")

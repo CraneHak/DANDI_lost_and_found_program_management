@@ -31,15 +31,19 @@ public class ReportController {
 
     @PostMapping
     public ResponseEntity<ReportResponse> create(@Valid @RequestBody CreateReportRequest body) {
-        Report report = new Report();
-        report.setItemName(body.itemName());
-        report.setCategory(body.category());
-        report.setLostAt(body.lostAt());
-        report.setLocation(body.location());
-        report.setMemo(body.memo());
+        try {
+            Report report = new Report();
+            report.setItemName(body.itemName());
+            report.setCategory(body.category());
+            report.setLostAt(body.lostAt());
+            report.setLocation(body.location());
+            report.setMemo(body.memo());
 
-        Report saved = reportService.create(report);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ReportResponse.from(saved));
+            Report saved = reportService.create(report);
+            return ResponseEntity.status(HttpStatus.CREATED).body(ReportResponse.from(saved));
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        }
     }
 
     @PatchMapping("/{id}/status")
@@ -50,6 +54,8 @@ public class ReportController {
         try {
             reportService.updateStatus(id, body.status());
             return ResponseEntity.ok(Map.of("message", "상태 변경이 완료되었습니다."));
+        } catch (IllegalStateException ex) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, ex.getMessage());
         } catch (ReportNotFoundException ex) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage());
         }
@@ -60,6 +66,8 @@ public class ReportController {
         try {
             reportService.delete(id);
             return ResponseEntity.noContent().build();
+        } catch (IllegalStateException ex) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, ex.getMessage());
         } catch (ReportNotFoundException ex) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage());
         }
