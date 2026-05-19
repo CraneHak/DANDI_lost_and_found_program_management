@@ -1,0 +1,15 @@
+ALTER TABLE keyword
+    ADD COLUMN requester_uid varchar(128) NULL;
+
+UPDATE keyword
+SET requester_uid = 'legacy'
+WHERE requester_uid IS NULL;
+
+ALTER TABLE keyword
+    MODIFY COLUMN requester_uid varchar(128) NOT NULL;
+
+CREATE INDEX idx_keyword_requester_uid_created_at
+    ON keyword (requester_uid, created_at);
+
+CREATE UNIQUE INDEX uq_keyword_requester_uid_keyword
+    ON keyword (requester_uid, keyword);

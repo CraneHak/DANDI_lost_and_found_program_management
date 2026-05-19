@@ -15,23 +15,22 @@ public class NoticeService {
         this.noticeRepository = noticeRepository;
     }
 
-    public List<Notice> findAll() {
-        return noticeRepository.findAllByOrderByCreatedAtDesc();
+    public List<Notice> findAll(String requesterUid) {
+        return noticeRepository.findAllByRequesterUidOrderByCreatedAtDesc(requesterUid);
     }
 
     @Transactional
-    public Notice markRead(Long id) {
-        Notice notice = noticeRepository.findById(id)
+    public Notice markRead(String requesterUid, Long id) {
+        Notice notice = noticeRepository.findByIdAndRequesterUid(id, requesterUid)
                 .orElseThrow(() -> new NoticeNotFoundException(id));
         notice.setRead(true);
         return noticeRepository.save(notice);
     }
 
     @Transactional
-    public void delete(Long id) {
-        if (!noticeRepository.existsById(id)) {
-            throw new NoticeNotFoundException(id);
-        }
-        noticeRepository.deleteById(id);
+    public void delete(String requesterUid, Long id) {
+        Notice notice = noticeRepository.findByIdAndRequesterUid(id, requesterUid)
+                .orElseThrow(() -> new NoticeNotFoundException(id));
+        noticeRepository.delete(notice);
     }
 }

@@ -2,8 +2,10 @@ package org.example.keyword;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import org.example.auth.FirebaseAuthenticationToken;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -21,16 +23,21 @@ public class KeywordController {
     }
 
     @GetMapping
-    public List<KeywordResponse> getAll() {
-        return keywordService.findAll().stream()
+    public List<KeywordResponse> getAll(Authentication authentication) {
+        FirebaseAuthenticationToken token = requireFirebaseToken(authentication);
+        return keywordService.findAll(token.getUid()).stream()
                 .map(KeywordResponse::from)
                 .toList();
     }
 
     @PostMapping
-    public ResponseEntity<KeywordResponse> add(@Valid @RequestBody AddKeywordRequest body) {
+    public ResponseEntity<KeywordResponse> add(
+            Authentication authentication,
+            @Valid @RequestBody AddKeywordRequest body
+    ) {
+        FirebaseAuthenticationToken token = requireFirebaseToken(authentication);
         try {
-            Keyword saved = keywordService.add(body.keyword());
+            Keyword saved = keywordService.add(token.getUid(), body.keyword());
             return ResponseEntity.status(HttpStatus.CREATED).body(KeywordResponse.from(saved));
         } catch (IllegalArgumentException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
@@ -38,26 +45,27 @@ public class KeywordController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(Authentication authentication, @PathVariable Long id) {
+        FirebaseAuthenticationToken token = requireFirebaseToken(authentication);
         try {
-            keywordService.delete(id);
+            keywordService.delete(token.getUid(), id);
             return ResponseEntity.noContent().build();
         } catch (KeywordNotFoundException ex) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage());
         }
     }
 
-    // ── Request / Response records ──────────────────────────────────────────
+    private FirebaseAuthenticationToken requireFirebaseToken(Authentication authentication) {
+        if (!(authentication instanceof FirebaseAuthenticationToken token)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication is required.");
+        }
+        return token;
+    }
 
-    public record AddKeywordRequest(
-            @NotBlank String keyword
-    ) {}
+    public record AddKeywordRequest(@NotBlank String keyword) {
+    }
 
-    public record KeywordResponse(
-            String id,
-            String keyword,
-            String createdAt
-    ) {
+    public record KeywordResponse(String id, String keyword, String createdAt) {
         private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
         static KeywordResponse from(Keyword k) {

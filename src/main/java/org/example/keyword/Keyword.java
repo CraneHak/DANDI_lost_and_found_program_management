@@ -15,6 +15,9 @@ public class Keyword {
     @Column(name = "keyword", nullable = false)
     private String keyword;
 
+    @Column(name = "requester_uid", nullable = false, length = 128)
+    private String requesterUid;
+
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -31,6 +34,9 @@ public class Keyword {
 
     public String getKeyword() { return keyword; }
     public void setKeyword(String keyword) { this.keyword = keyword; }
+
+    public String getRequesterUid() { return requesterUid; }
+    public void setRequesterUid(String requesterUid) { this.requesterUid = requesterUid; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

@@ -1,7 +1,9 @@
 package org.example.notice;
 
+import org.example.auth.FirebaseAuthenticationToken;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -19,33 +21,41 @@ public class NoticeController {
     }
 
     @GetMapping
-    public List<NoticeResponse> getAll() {
-        return noticeService.findAll().stream()
+    public List<NoticeResponse> getAll(Authentication authentication) {
+        FirebaseAuthenticationToken token = requireFirebaseToken(authentication);
+        return noticeService.findAll(token.getUid()).stream()
                 .map(NoticeResponse::from)
                 .toList();
     }
 
     @PatchMapping("/{id}/read")
-    public ResponseEntity<Map<String, String>> markRead(@PathVariable Long id) {
+    public ResponseEntity<Map<String, String>> markRead(Authentication authentication, @PathVariable Long id) {
+        FirebaseAuthenticationToken token = requireFirebaseToken(authentication);
         try {
-            noticeService.markRead(id);
-            return ResponseEntity.ok(Map.of("message", "읽음 처리되었습니다."));
+            noticeService.markRead(token.getUid(), id);
+            return ResponseEntity.ok(Map.of("message", "read updated"));
         } catch (NoticeNotFoundException ex) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage());
         }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(Authentication authentication, @PathVariable Long id) {
+        FirebaseAuthenticationToken token = requireFirebaseToken(authentication);
         try {
-            noticeService.delete(id);
+            noticeService.delete(token.getUid(), id);
             return ResponseEntity.noContent().build();
         } catch (NoticeNotFoundException ex) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage());
         }
     }
 
-    // ── Response record ──────────────────────────────────────────────────────
+    private FirebaseAuthenticationToken requireFirebaseToken(Authentication authentication) {
+        if (!(authentication instanceof FirebaseAuthenticationToken token)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication is required.");
+        }
+        return token;
+    }
 
     public record NoticeResponse(
             String id,

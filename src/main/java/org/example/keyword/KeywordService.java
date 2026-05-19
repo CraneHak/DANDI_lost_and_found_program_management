@@ -17,12 +17,12 @@ public class KeywordService {
         this.keywordRepository = keywordRepository;
     }
 
-    public List<Keyword> findAll() {
-        return keywordRepository.findAllByOrderByCreatedAtAsc();
+    public List<Keyword> findAll(String requesterUid) {
+        return keywordRepository.findAllByRequesterUidOrderByCreatedAtAsc(requesterUid);
     }
 
     @Transactional
-    public Keyword add(String keyword) {
+    public Keyword add(String requesterUid, String keyword) {
         String normalized = normalizeKeyword(keyword);
         if (normalized.isEmpty()) {
             throw new IllegalArgumentException("keyword is required.");
@@ -30,21 +30,22 @@ public class KeywordService {
         if (normalized.length() > MAX_KEYWORD_LENGTH) {
             throw new IllegalArgumentException("keyword must be at most 30 characters.");
         }
-        if (keywordRepository.findByKeywordIgnoreCase(normalized).isPresent()) {
-            throw new IllegalArgumentException("이미 등록된 키워드입니다.");
+        if (keywordRepository.findByRequesterUidAndKeywordIgnoreCase(requesterUid, normalized).isPresent()) {
+            throw new IllegalArgumentException("keyword already exists.");
         }
-        if (keywordRepository.count() >= MAX_KEYWORD_COUNT) {
-            throw new IllegalArgumentException("키워드는 최대 10개까지 등록할 수 있습니다.");
+        if (keywordRepository.countByRequesterUid(requesterUid) >= MAX_KEYWORD_COUNT) {
+            throw new IllegalArgumentException("you can register up to 10 keywords.");
         }
 
         Keyword entity = new Keyword();
         entity.setKeyword(normalized);
+        entity.setRequesterUid(requesterUid);
         return keywordRepository.save(entity);
     }
 
     @Transactional
-    public void delete(Long id) {
-        if (!keywordRepository.existsById(id)) {
+    public void delete(String requesterUid, Long id) {
+        if (keywordRepository.findByIdAndRequesterUid(id, requesterUid).isEmpty()) {
             throw new KeywordNotFoundException(id);
         }
         keywordRepository.deleteById(id);

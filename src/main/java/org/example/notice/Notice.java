@@ -21,6 +21,9 @@ public class Notice {
     @Column(name = "`read`", nullable = false)
     private boolean read = false;
 
+    @Column(name = "requester_uid", nullable = false, length = 128)
+    private String requesterUid;
+
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -43,6 +46,9 @@ public class Notice {
 
     public boolean isRead() { return read; }
     public void setRead(boolean read) { this.read = read; }
+
+    public String getRequesterUid() { return requesterUid; }
+    public void setRequesterUid(String requesterUid) { this.requesterUid = requesterUid; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
