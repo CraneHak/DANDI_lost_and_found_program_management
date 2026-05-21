@@ -135,9 +135,8 @@ public class LostItemService {
             item.setImageUrl(image);
         }
 
-        if (item.getStatus() == null) {
-            item.setStatus(resolveItemStatus(status));
-        }
+        // 엔티티 기본값이 STORED라 null 체크만 하면 published가 반영되지 않음
+        item.setStatus(resolveItemStatus(status));
 
         return repository.save(item);
     }
@@ -155,9 +154,7 @@ public class LostItemService {
             item.setReportId(request.reportId());
         }
         applyRequest(item, request);
-        if (item.getStatus() == null) {
-            item.setStatus(ItemStatus.ACQUIRED);
-        }
+        item.setStatus(ItemStatus.ACQUIRED);
         return repository.save(item);
     }
 
@@ -278,25 +275,26 @@ public class LostItemService {
         parseStoredDate(request.resolvedFoundAt()).ifPresent(item::setStoredDate);
     }
 
-    private java.util.Optional<LocalDate> parseStoredDate(String raw) {
+    private java.util.Optional<LocalDateTime> parseStoredDate(String raw) {
         if (raw == null || raw.isBlank()) {
             return java.util.Optional.empty();
         }
         String normalized = raw.trim().replace(" ", "T");
         try {
-            if (normalized.length() >= 10) {
-                return java.util.Optional.of(LocalDate.parse(normalized.substring(0, 10)));
-            }
+            return java.util.Optional.of(LocalDateTime.parse(normalized, DateTimeFormatter.ISO_LOCAL_DATE_TIME));
         } catch (Exception ignored) {
             // fall through
         }
         try {
-            return java.util.Optional.of(
-                    LocalDateTime.parse(normalized, DateTimeFormatter.ISO_LOCAL_DATE_TIME).toLocalDate()
-            );
+            if (normalized.length() >= 10) {
+                return java.util.Optional.of(
+                        LocalDate.parse(normalized.substring(0, 10)).atStartOfDay()
+                );
+            }
         } catch (Exception ignored) {
             return java.util.Optional.empty();
         }
+        return java.util.Optional.empty();
     }
 
     private Long parseReportId(String reportId) {

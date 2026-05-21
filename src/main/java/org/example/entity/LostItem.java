@@ -1,7 +1,6 @@
 package org.example.entity;
 
 import jakarta.persistence.*;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -30,8 +29,9 @@ public class LostItem {
     @Column(name = "stored_location")
     private String storedLocation;
 
+    /** 습득 일시 (프론트 lostAt/foundAt — 시·분 포함) */
     @Column(name = "stored_date")
-    private LocalDate storedDate;
+    private LocalDateTime storedDate;
 
     @Column(name = "contact")
     private String contact;
@@ -104,8 +104,8 @@ public class LostItem {
     public String getStoredLocation() { return storedLocation; }
     public void setStoredLocation(String storedLocation) { this.storedLocation = storedLocation; }
 
-    public LocalDate getStoredDate() { return storedDate; }
-    public void setStoredDate(LocalDate storedDate) { this.storedDate = storedDate; }
+    public LocalDateTime getStoredDate() { return storedDate; }
+    public void setStoredDate(LocalDateTime storedDate) { this.storedDate = storedDate; }
 
     public String getContact() { return contact; }
     public void setContact(String contact) { this.contact = contact; }
