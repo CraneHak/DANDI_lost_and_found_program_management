@@ -7,6 +7,7 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
@@ -56,5 +57,31 @@ public class S3Service {
         );
 
         return "https://" + bucket + ".s3." + region + ".amazonaws.com/" + key;
+    }
+
+    /** S3 URL이면 객체 삭제 (DB 삭제 시 고아 파일 방지, 실패 시 무시) */
+    public void deleteByUrlIfPresent(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank() || !imageUrl.contains(".amazonaws.com/")) {
+            return;
+        }
+        String prefix = ".amazonaws.com/";
+        int idx = imageUrl.indexOf(prefix);
+        if (idx < 0) {
+            return;
+        }
+        String key = imageUrl.substring(idx + prefix.length());
+        if (key.isBlank()) {
+            return;
+        }
+        try {
+            s3Client.deleteObject(
+                    DeleteObjectRequest.builder()
+                            .bucket(bucket)
+                            .key(key)
+                            .build()
+            );
+        } catch (RuntimeException ignored) {
+            // S3 삭제 실패해도 DB 삭제는 진행
+        }
     }
 }

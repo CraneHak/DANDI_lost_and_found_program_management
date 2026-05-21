@@ -5,7 +5,10 @@ import org.example.controller.CreateLostItemRequest;
 import org.example.controller.UpdateLostItemRequest;
 import org.example.entity.ItemStatus;
 import org.example.entity.LostItem;
+import org.example.pickup.CollectionLogRepository;
+import org.example.pickup.PickupPassRepository;
 import org.example.report.Report;
+import org.example.report.ReportRepository;
 import org.example.repository.LostItemRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,15 +26,24 @@ public class LostItemService {
     private final LostItemRepository repository;
     private final S3Service s3Service;
     private final ImageUrlService imageUrlService;
+    private final CollectionLogRepository collectionLogRepository;
+    private final PickupPassRepository pickupPassRepository;
+    private final ReportRepository reportRepository;
 
     public LostItemService(
             LostItemRepository repository,
             S3Service s3Service,
-            ImageUrlService imageUrlService
+            ImageUrlService imageUrlService,
+            CollectionLogRepository collectionLogRepository,
+            PickupPassRepository pickupPassRepository,
+            ReportRepository reportRepository
     ) {
         this.repository = repository;
         this.s3Service = s3Service;
         this.imageUrlService = imageUrlService;
+        this.collectionLogRepository = collectionLogRepository;
+        this.pickupPassRepository = pickupPassRepository;
+        this.reportRepository = reportRepository;
     }
 
     public List<LostItem> findAll() {
@@ -128,12 +140,33 @@ public class LostItemService {
 
     @Transactional
     public void delete(Integer id) {
-        repository.deleteById(id);
+        LostItem item = repository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("분실물을 찾을 수 없습니다. id=" + id));
+        deleteCascade(item, true);
     }
 
+    /** 연결 분실물만 제거 (신고 삭제 API에서 report 행은 ReportService가 삭제) */
     @Transactional
     public void deleteByReportId(Long reportId) {
-        repository.findByReportId(reportId).ifPresent(repository::delete);
+        repository.findByReportId(reportId).ifPresent(item -> deleteCascade(item, false));
+    }
+
+    /**
+     * 수령 로그·수령증 → 분실물 → (선택) 연결 신고(report) 순으로 제거.
+     */
+    private void deleteCascade(LostItem item, boolean deleteLinkedReport) {
+        Integer lostItemId = item.getId();
+        Long reportId = item.getReportId();
+
+        collectionLogRepository.deleteByLostItemId(lostItemId);
+        pickupPassRepository.deleteByLostItem_Id(lostItemId);
+        s3Service.deleteByUrlIfPresent(item.getImageUrl());
+
+        repository.delete(item);
+
+        if (deleteLinkedReport && reportId != null && reportRepository.existsById(reportId)) {
+            reportRepository.deleteById(reportId);
+        }
     }
 
     private void applyRequest(LostItem item, CreateLostItemRequest request) {

@@ -25,4 +25,6 @@ public interface PickupPassRepository extends JpaRepository<PickupPass, Long> {
             @Param("requesterUid") String requesterUid,
             @Param("now") OffsetDateTime now
     );
+
+    void deleteByLostItem_Id(Integer lostItemId);
 }
