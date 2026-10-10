@@ -11,19 +11,25 @@ import org.example.keyword.KeywordAlertService;
 import org.example.report.Report;
 import org.example.report.ReportRepository;
 import org.example.repository.LostItemRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashSet;
 import java.util.List;
 
 @Service
 public class LostItemService {
+
+    private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 
     private final LostItemRepository repository;
     private final S3Service s3Service;
@@ -57,7 +63,7 @@ public class LostItemService {
 
     public LostItem findById(Integer id) {
         return repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("분실물을 찾을 수 없습니다. id=" + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "분실물을 찾을 수 없습니다. id=" + id));
     }
 
     public LostItem save(LostItem lostItem, MultipartFile image) throws IOException {
@@ -113,6 +119,7 @@ public class LostItemService {
             item = repository.findByReportId(linkedReportId).orElseGet(LostItem::new);
             item.setReportId(linkedReportId);
         }
+        boolean wasPublic = isPublic(item);
 
         item.setItemName(resolvedName);
         String type = resolveItemType(itemType, category);
@@ -144,9 +151,12 @@ public class LostItemService {
         }
 
         // 엔티티 기본값이 STORED라 null 체크만 하면 published가 반영되지 않음
-        item.setStatus(resolveItemStatus(status));
+        // 이미 공개·수령 단계인 물품(신고 승인으로 생성된 행 등)은 상태를 되돌리지 않는다.
+        if (!wasPublic) {
+            item.setStatus(resolveItemStatus(status));
+        }
 
-        return persist(item);
+        return persist(item, wasPublic);
     }
 
     @Transactional
@@ -161,14 +171,18 @@ public class LostItemService {
         if (request.reportId() != null) {
             item.setReportId(request.reportId());
         }
+        boolean wasPublic = isPublic(item);
         applyRequest(item, request);
-        item.setStatus(ItemStatus.ACQUIRED);
-        return persist(item);
+        if (!wasPublic) {
+            item.setStatus(ItemStatus.ACQUIRED);
+        }
+        return persist(item, wasPublic);
     }
 
     @Transactional
     public LostItem upsertFromReport(Report report) {
         LostItem item = repository.findByReportId(report.getId()).orElseGet(LostItem::new);
+        boolean wasPublic = isPublic(item);
         item.setReportId(report.getId());
         item.setItemName(report.getItemName());
         item.setItemType(resolveItemType(null, report.getCategory()));
@@ -176,12 +190,14 @@ public class LostItemService {
         item.setLostLocation(report.getLocation());
         item.setStoredLocation(report.getStorage());
         item.setContact(report.getMemo());
-        item.setStatus(ItemStatus.ACQUIRED);
+        if (!wasPublic) {
+            item.setStatus(ItemStatus.ACQUIRED);
+        }
         if (report.getImage() != null && !report.getImage().isBlank()) {
             item.setImageUrl(imageUrlService.normalizeForStorage(report.getImage()));
         }
         parseStoredDate(report.getLostAt()).ifPresent(item::setStoredDate);
-        return persist(item);
+        return persist(item, wasPublic);
     }
 
     @Transactional
@@ -218,15 +234,26 @@ public class LostItemService {
         if (request.image() != null && !request.image().isBlank()) {
             item.setImageUrl(imageUrlService.normalizeForStorage(request.image()));
         }
+        return repository.save(item);
+    }
+
+    /** 키워드 알림은 처음 공개될 때 한 번만 보낸다 (수정·재승인·중복 등록 요청에는 보내지 않음). */
+    private LostItem persist(LostItem item, boolean wasPublic) {
         LostItem saved = repository.save(item);
-        keywordAlertService.notifyMatchingUsers(saved);
+        if (!wasPublic) {
+            keywordAlertService.notifyMatchingUsers(saved);
+        }
         return saved;
     }
 
-    private LostItem persist(LostItem item) {
-        LostItem saved = repository.save(item);
-        keywordAlertService.notifyMatchingUsers(saved);
-        return saved;
+    private boolean isPublic(LostItem item) {
+        if (item.getId() == null) {
+            return false;
+        }
+        ItemStatus status = item.getStatus();
+        return status == ItemStatus.ACQUIRED
+                || status == ItemStatus.PENDING_RECEIPT
+                || status == ItemStatus.RECEIVED;
     }
 
     private String resolveItemType(String itemType, String category) {
@@ -315,6 +342,14 @@ public class LostItemService {
         String normalized = raw.trim().replace(" ", "T");
         try {
             return java.util.Optional.of(LocalDateTime.parse(normalized, DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        } catch (Exception ignored) {
+            // fall through
+        }
+        try {
+            // 프론트는 UTC ISO(예: 2026-10-10T09:30:00.000Z)를 보낸다 — 한국 시각으로 바꿔 시·분을 유지
+            return java.util.Optional.of(OffsetDateTime.parse(normalized)
+                    .atZoneSameInstant(SEOUL)
+                    .toLocalDateTime());
         } catch (Exception ignored) {
             // fall through
         }

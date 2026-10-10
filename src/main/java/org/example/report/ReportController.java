@@ -46,7 +46,7 @@ public class ReportController {
             report.setLostAt(body.lostAt());
             report.setLocation(body.location());
             report.setStorage(body.storage());
-            report.setMemo(mergeMemo(body.memo(), body.ownerName()));
+            report.setMemo(body.memo());
             report.setImage(body.resolvedImage());
             if (body.ownerEmail() != null && !body.ownerEmail().isBlank()) {
                 report.setReporterEmail(body.ownerEmail().trim());
@@ -77,9 +77,7 @@ public class ReportController {
             @RequestParam(required = false) String storage,
             @RequestParam(required = false) String memo,
             @RequestParam(required = false) String ownerEmail,
-            @RequestParam(required = false) String ownerName,
             @RequestParam(required = false) String reporterEmail,
-            @RequestParam(required = false) String reporterName,
             @RequestParam(required = false) String imageUrl,
             @RequestParam(required = false) String photoUrl,
             @RequestParam(required = false) String mosaicImageUrl,
@@ -100,9 +98,7 @@ public class ReportController {
                     storage,
                     memo,
                     ownerEmail,
-                    ownerName,
                     reporterEmail,
-                    reporterName,
                     imageUrl,
                     null,
                     photoUrl,
@@ -173,7 +169,7 @@ public class ReportController {
             ReportStatus status
     ) {
         try {
-            Report saved = reportService.updateStatus(id, status, toActor(authentication));
+            Report saved = reportService.updateStatus(id, status);
             return ResponseEntity.ok(Map.of(
                     "message", "상태 변경이 완료되었습니다.",
                     "id", saved.getId(),
@@ -201,15 +197,6 @@ public class ReportController {
         return actor;
     }
 
-    private String mergeMemo(String memo, String ownerName) {
-        if (ownerName == null || ownerName.isBlank()) {
-            return memo;
-        }
-        if (memo == null || memo.isBlank()) {
-            return "신고자: " + ownerName.trim();
-        }
-        return memo.trim() + " (신고자: " + ownerName.trim() + ")";
-    }
 
     public record CreateReportRequest(
             @NotBlank String itemName,
@@ -221,8 +208,7 @@ public class ReportController {
             String image,
             String imageUrl,
             String photoUrl,
-            String ownerEmail,
-            String ownerName
+            String ownerEmail
     ) {
         public String resolvedImage() {
             if (image != null && !image.isBlank()) return image.trim();

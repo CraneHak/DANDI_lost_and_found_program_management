@@ -2,12 +2,15 @@ package org.example.pickup;
 
 import org.example.auth.FirebaseAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/pickup-passes")
@@ -24,6 +27,11 @@ public class PickupPassController {
             @RequestBody PickupPassService.IssuePickupPassRequest request
     ) {
         return pickupPassService.issuePass(requireFirebaseToken(authentication), request);
+    }
+
+    @GetMapping("/me")
+    public List<PickupPassService.MyPickupPassResponse> myPickupPasses(Authentication authentication) {
+        return pickupPassService.findMyPasses(requireFirebaseToken(authentication));
     }
 
     @PostMapping("/verify")

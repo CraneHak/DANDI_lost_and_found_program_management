@@ -79,9 +79,7 @@ public class ReportService {
             String storage,
             String memo,
             String ownerEmail,
-            String ownerName,
             String reporterEmail,
-            String reporterName,
             String imageUrl,
             String imageField,
             String photoUrl,
@@ -95,7 +93,7 @@ public class ReportService {
         report.setLostAt(firstNonBlank(lostAt, foundAt));
         report.setLocation(firstNonBlank(location, place));
         report.setStorage(trimToNull(storage));
-        report.setMemo(mergeReporterMemo(memo, firstNonBlank(ownerName, reporterName)));
+        report.setMemo(memo);
         report.setImage(resolveReportImage(imagePart, filePart, imageUrl, imageField, photoUrl, mosaicImageUrl));
 
         String email = firstNonBlank(ownerEmail, reporterEmail);
@@ -152,7 +150,7 @@ public class ReportService {
     }
 
     @Transactional
-    public Report updateStatus(Long id, ReportStatus newStatus, ReportActor actor) {
+    public Report updateStatus(Long id, ReportStatus newStatus) {
         Report report = reportRepository.findById(id)
                 .orElseThrow(() -> new ReportNotFoundException(id));
         validateStatusTransition(report.getStatus(), newStatus);
@@ -164,8 +162,9 @@ public class ReportService {
         }
         Report saved = reportRepository.save(report);
 
-        String requesterUid = actor != null ? actor.uid() : saved.getReporterUid();
-        if (requesterUid != null && !requesterUid.isBlank()) {
+        // 처리 결과는 처리자(관리자)가 아니라 신고자에게 보낸다.
+        String reporterUid = saved.getReporterUid();
+        if (reporterUid != null && !reporterUid.isBlank()) {
             String title = switch (newStatus) {
                 case RESOLVED -> "습득 완료";
                 case PICKED_UP -> "최종 수령 완료";
@@ -178,7 +177,7 @@ public class ReportService {
                 case PICKED_UP -> "물품 수령이 완료되었습니다: " + safe(saved.getItemName());
                 default -> "신고 상태가 변경되었습니다: " + safe(saved.getItemName());
             };
-            noticeService.create(requesterUid, title, message);
+            noticeService.create(reporterUid, title, message);
         }
 
         if (newStatus == ReportStatus.RESOLVED) {
@@ -231,15 +230,6 @@ public class ReportService {
         return null;
     }
 
-    private String mergeReporterMemo(String memo, String ownerName) {
-        if (ownerName == null || ownerName.isBlank()) {
-            return memo;
-        }
-        if (memo == null || memo.isBlank()) {
-            return "신고자: " + ownerName.trim();
-        }
-        return memo.trim() + " (신고자: " + ownerName.trim() + ")";
-    }
 
     private String resolveReportImage(
             MultipartFile imagePart,
