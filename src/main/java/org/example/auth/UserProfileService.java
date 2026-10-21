@@ -26,10 +26,11 @@ public class UserProfileService {
     }
 
     @Transactional
-    public UserProfile updateProfile(String uid, String email, String name, String department) {
+    public UserProfile updateProfile(String uid, String email, String name, String department, String studentId) {
         UserProfile userProfile = findOrCreate(uid, email);
         userProfile.setName(name != null ? name.trim() : null);
         userProfile.setDepartment(department != null ? department.trim() : null);
+        userProfile.setStudentNo(studentId != null ? studentId.trim() : null);
         return userProfileRepository.save(userProfile);
     }
 

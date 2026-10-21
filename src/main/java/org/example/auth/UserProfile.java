@@ -51,13 +51,13 @@ public class UserProfile {
         if (this.role == null) {
             this.role = UserRole.ROLE_USER;
         }
-        this.profileCompleted = isFilled(name) && isFilled(department);
+        this.profileCompleted = isProfileCompleted();
     }
 
     @PreUpdate
     public void onUpdate() {
         this.updatedAt = LocalDateTime.now();
-        this.profileCompleted = isFilled(name) && isFilled(department);
+        this.profileCompleted = isProfileCompleted();
     }
 
     private boolean isFilled(String value) {
@@ -117,7 +117,9 @@ public class UserProfile {
     }
 
     public boolean isProfileCompleted() {
-        return profileCompleted;
+        // Older rows can have profile_completed=true without a student number.
+        return isFilled(name) && isFilled(department)
+                && studentNo != null && studentNo.matches("[0-9]{8}");
     }
 
     public LocalDateTime getLastLoginAt() {

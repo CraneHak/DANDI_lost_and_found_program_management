@@ -3,6 +3,7 @@ package org.example.auth;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -77,7 +78,8 @@ public class AuthController {
                 token.getUid(),
                 token.getEmail(),
                 requestBody.name(),
-                requestBody.department()
+                requestBody.department(),
+                requestBody.studentId()
         );
         String accessToken = resolveAccessToken(request, null);
         boolean admin = resolveAdmin(token, userProfile);
@@ -133,7 +135,8 @@ public class AuthController {
                 token.getUid(),
                 token.getEmail(),
                 userProfile.getName(),
-                userProfile.getDepartment()
+                userProfile.getDepartment(),
+                userProfile.getStudentNo()
         );
     }
 
@@ -142,7 +145,9 @@ public class AuthController {
 
     public record UpdateProfileRequest(
             @NotBlank(message = "name is required") String name,
-            @NotBlank(message = "department is required") String department
+            @NotBlank(message = "department is required") String department,
+            @NotBlank(message = "학번을 입력해 주세요.")
+            @Pattern(regexp = "[0-9]{8}", message = "학번은 8자리 숫자로 입력해 주세요.") String studentId
     ) {
     }
 
@@ -154,7 +159,8 @@ public class AuthController {
             String uid,
             String email,
             String name,
-            String department
+            String department,
+            String studentId
     ) {
     }
 }
