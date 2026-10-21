@@ -1,5 +1,7 @@
 import os
 import re
+import sys
+from datetime import date
 import requests
 import pymysql
 from dotenv import load_dotenv
@@ -30,13 +32,15 @@ DB_CONFIG = {
 
 
 def login(page):
+    # 포털은 백그라운드 요청이 계속돼 networkidle에 도달하지 않음 → load 기준으로 대기
     page.goto(LOGIN_URL)
-    page.wait_for_load_state("networkidle")
+    page.wait_for_load_state("load")
 
     page.fill("input[name='user_id']", STUDENT_ID)
     page.fill("input[name='user_password']", PASSWORD)
     page.get_by_role("button", name="로그인").click()
-    page.wait_for_load_state("networkidle")
+    page.wait_for_url(lambda url: "login" not in url, timeout=60000)
+    page.wait_for_load_state("load")
     print("로그인 완료")
 
 
@@ -44,24 +48,48 @@ def get_posts(page):
     """목록 페이지를 순회하며 (post_no, url, list_title) 수집 - 게시글 번호 오름차순(오래된 순) 정렬"""
     posts = []
     seen = set()
-    for ln in range(1, 6):  # 5페이지
+    ln = 0
+    while True:  # 새 게시글이 안 나올 때까지 전 페이지 순회
+        ln += 1
         page.goto(f"{BASE_URL}/p/LOST01?b=56&ls=20&ln={ln}&dm=m")
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("load")
+        try:
+            page.wait_for_selector("table tbody tr", timeout=15000)
+        except Exception:
+            pass  # 행이 없으면 아래에서 break
 
         rows = page.query_selector_all("table tbody tr")
         if not rows:
             break
 
+        before = len(posts)
         for row in rows:
             cells = row.query_selector_all("td")
             if len(cells) < 3:
                 continue
             post_no = cells[0].inner_text().strip()
-            if post_no.isdigit() and post_no not in seen:
+            list_title = cells[2].inner_text().strip()
+            # 제목 링크의 실제 주소를 우선 사용 (화면 번호와 내부 번호가 다를 수 있음)
+            link = row.query_selector("a[href*='dm=r']")
+            href = link.get_attribute("href") if link else None
+            if href and not href.startswith("http"):
+                href = BASE_URL + href
+            if not post_no.isdigit():
+                # 공지 등 번호 칸이 숫자가 아닌 행은 링크의 p= 값을 번호로 사용
+                m = re.search(r"[?&]p=(\d+)", href or "")
+                if not m:
+                    print(f"  건너뜀 (번호 없음): [{post_no}] {list_title} | {href}")
+                    continue
+                post_no = m.group(1)
+            if post_no not in seen:
                 seen.add(post_no)
-                list_title = cells[2].inner_text().strip()
-                url = f"{BASE_URL}/p/LOST01?b=56&ls=20&ln={ln}&dm=r&p={post_no}"
+                url = href or f"{BASE_URL}/p/LOST01?b=56&ls=20&ln={ln}&dm=r&p={post_no}"
                 posts.append((post_no, url, list_title))
+
+        print(f"  목록 {ln}페이지: {len(posts) - before}개")
+        # 마지막 페이지를 넘기면 빈 목록이나 이전과 같은 글만 나옴
+        if len(posts) == before:
+            break
 
     # 게시글 번호 오름차순 정렬 (오래된 것 먼저)
     posts.sort(key=lambda x: int(x[0]))
@@ -109,9 +137,13 @@ def normalize_date(raw):
         m = re.search(pattern, cleaned)
         if m:
             if fmt == "yy.mm.dd":
-                return f"20{m.group(1)}-{m.group(2)}-{m.group(3)}"
+                year, month, day = 2000 + int(m.group(1)), int(m.group(2)), int(m.group(3))
             else:
-                return f"{m.group(1)}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
+                year, month, day = int(m.group(1)), int(m.group(2)), int(m.group(3))
+            # ponytail: 미래 날짜는 게시글 연도 오타로 보고 1년 당김 (예: 2027.05.29 → 2026.05.29)
+            if (year, month, day) > date.today().timetuple()[:3]:
+                year -= 1
+            return f"{year}-{month:02d}-{day:02d}"
     return None
 
 
@@ -231,7 +263,7 @@ def download_images(page, seq, item_name=None):
 
 def parse_detail(page, seq, url, list_title=""):
     page.goto(url)
-    page.wait_for_load_state("networkidle")
+    page.wait_for_load_state("load")
 
     body_text = page.inner_text("body")
 
@@ -268,7 +300,8 @@ def parse_detail(page, seq, url, list_title=""):
                     and not is_location(bracket_val)
                     and bracket_val not in NOISE_WORDS
                     and "분실물" not in bracket_val
-                    and "습득물" not in bracket_val):
+                    and "습득물" not in bracket_val
+                    and "기간" not in bracket_val):  # [축제기간] 같은 시기 표기는 물품명 아님
                 item_name = bracket_val
 
     found_location  = normalize_location(extract_field(body_text, "습득장소"))
@@ -284,6 +317,10 @@ def parse_detail(page, seq, url, list_title=""):
     images = download_images(page, seq, item_name)
     if images:
         print(f"  이미지 {len(images)}개 저장: crawler/{seq}/")
+        # 물품명을 못 찾았으면 첨부 파일명(예: 전자담배.jpg)으로 대체
+        stem = os.path.splitext(images[0])[0]
+        if not item_name and not stem.startswith("image"):
+            item_name = item_type = stem
 
     return {
         "item_name":       item_name,
@@ -353,6 +390,41 @@ def extract_color(text):
     return None
 
 
+# 카테고리명은 프론트(lib/mock-data.ts categories) 및 DB category 테이블과 동일해야 함
+CATEGORY_KEYWORDS = {
+    "신분증": ["학생증", "신분증", "주민등록증", "운전면허", "여권", "외국인등록증"],
+    "카드/티켓": ["카드", "티켓", "교통카드"],
+    "지갑/가방": ["지갑", "카드지갑", "가방", "백팩", "파우치", "에코백", "쇼핑백", "크로스백"],
+    "전자기기": ["이어폰", "에어팟", "버즈", "애플워치", "갤럭시워치", "워치", "휴대폰", "핸드폰", "아이폰", "갤럭시",
+             "노트북", "태블릿", "아이패드", "패드", "갤럭시탭", "충전기", "보조배터리", "보존배터리", "배터리",
+             "마우스", "키보드", "애플펜슬", "펜슬", "베터리", "테블릿", "USB", "케이블", "드론", "전자담배", "헤드셋", "헤드폰", "스피커", "계산기"],
+    "의류": ["모자", "바지", "자켓", "재킷", "점퍼", "후드", "셔츠", "니트", "가디건", "목도리", "장갑",
+           "슬리퍼", "신발", "양말", "패딩", "코트", "조끼", "바라클라바", "의류", "옷"],
+    "악세서리": ["안경", "선글라스", "반지", "목걸이", "귀걸이", "팔찌", "시계", "머리끈", "집게삔", "헤어", "스크런치", "거울"],
+    "도서/문구": ["책", "노트", "필통", "볼펜", "샤프", "연필", "S펜", "교재", "수첩", "파일", "도서", "문제집", "스케치북"],
+    "스포츠/운동": ["라켓", "축구공", "농구공", "배구공", "운동", "요가"],
+    "악기": ["악기", "리코더", "우쿨렐레", "기타 케이스"],
+    "텀블러/생활용품": ["텀블러", "물병", "보틀", "컵", "안약", "렌즈", "손풍기", "선풍기", "담요", "쿠션",
+                  "인형", "피규어", "증명사진", "칫솔", "약"],
+    "열쇠/키링": ["열쇠", "키링", "키홀더", "차키"],
+    "우산/우비": ["우산", "우비"],
+    "화장품": ["틴트", "립", "화장품", "파우더", "향수", "핸드크림"],
+}
+
+
+def guess_category(item_name):
+    """물품명에서 가장 앞에 나온 키워드(같은 위치면 긴 키워드)의 카테고리, 없으면 '기타'"""
+    if not item_name:
+        return "기타"
+    best = None  # (위치, -길이, 카테고리)
+    for category, words in CATEGORY_KEYWORDS.items():
+        for word in words:
+            pos = item_name.find(word)
+            if pos >= 0 and (best is None or (pos, -len(word)) < best[:2]):
+                best = (pos, -len(word), category)
+    return best[2] if best else "기타"
+
+
 def extract_type(title):
     after_bracket = re.sub(r"\[.+?\]", "", title).strip()
     after_bracket = re.sub(r"\(.+?\)", "", after_bracket).strip()
@@ -379,11 +451,11 @@ def init_db(conn):
     conn.commit()
 
 
-def get_max_post_no(conn):
-    """DB에 저장된 가장 최신 게시글 번호 반환 (없으면 0)"""
+def get_saved_post_nos(conn):
+    """DB에 이미 저장된 게시글 번호 집합"""
     with conn.cursor() as cur:
-        cur.execute("SELECT COALESCE(MAX(post_no), 0) FROM lost_item")
-        return cur.fetchone()[0]
+        cur.execute("SELECT post_no FROM lost_item WHERE post_no IS NOT NULL")
+        return {row[0] for row in cur.fetchall()}
 
 
 def save_to_db(items):
@@ -395,11 +467,12 @@ def save_to_db(items):
                 cur.execute("""
                     INSERT INTO lost_item
                         (post_no, item_name, found_location, stored_location, stored_date,
-                         contact, color, item_type, image_url)
+                         contact, color, item_type, image_url, category_id)
                     VALUES
                         (%(post_no)s, %(item_name)s, %(found_location)s, %(stored_location)s,
-                         %(stored_date)s, %(contact)s, %(color)s, %(item_type)s, %(image_url)s)
-                """, {**item, "image_url": None})
+                         %(stored_date)s, %(contact)s, %(color)s, %(item_type)s, %(image_url)s,
+                         (SELECT id FROM category WHERE name = %(category)s))
+                """, {**item, "image_url": None, "category": guess_category(item["item_name"])})
         conn.commit()
         print(f"{len(items)}개 저장 완료")
     finally:
@@ -410,11 +483,11 @@ def main():
     # DB 연결해서 마지막 post_no 확인
     conn = pymysql.connect(**DB_CONFIG)
     init_db(conn)
-    max_post_no = get_max_post_no(conn)
+    saved_post_nos = get_saved_post_nos(conn)
     conn.close()
 
-    if max_post_no > 0:
-        print(f"마지막 저장된 게시글 번호: #{max_post_no} → 이후 게시글만 크롤링")
+    if saved_post_nos:
+        print(f"DB에 저장된 게시글 {len(saved_post_nos)}개 → 없는 게시글만 크롤링")
     else:
         print("첫 실행: 전체 게시글 크롤링")
 
@@ -423,10 +496,15 @@ def main():
         page = browser.new_page()
 
         login(page)
-        all_posts = get_posts(page)
+        # python crawl.py 110 138 → 목록 순회 없이 지정한 게시글만 크롤링
+        targets = [arg for arg in sys.argv[1:] if arg.isdigit()]
+        if targets:
+            all_posts = [(pno, f"{BASE_URL}/p/LOST01?b=56&ls=20&ln=1&dm=r&p={pno}", "") for pno in targets]
+        else:
+            all_posts = get_posts(page)
 
         # 이미 저장된 게시글 제외
-        new_posts = [(pno, url, title) for pno, url, title in all_posts if int(pno) > max_post_no]
+        new_posts = [(pno, url, title) for pno, url, title in all_posts if int(pno) not in saved_post_nos]
         print(f"새 게시글 {len(new_posts)}개 크롤링 시작")
 
         items = []
@@ -434,6 +512,13 @@ def main():
             try:
                 seq = int(post_no)
                 item = parse_detail(page, seq, url, list_title)
+                if not any(item.values()):
+                    # 빈 페이지면 DB에 넣지 않고 원인 확인용 HTML 저장
+                    debug_path = os.path.join(IMAGE_DIR, f"debug_{seq}.html")
+                    with open(debug_path, "w", encoding="utf-8") as f:
+                        f.write(page.content())
+                    print(f"[{seq}] 본문 없음 → 저장 안 함 ({url}), 확인용: {debug_path}")
+                    continue
                 item["post_no"] = int(post_no)
                 items.append(item)
                 print(f"[{seq}] 파싱 완료: {item['item_name']} (게시글 #{post_no} → 폴더 {seq})")

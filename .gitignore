@@ -65,3 +65,4 @@ gradle.properties
 
 ### Runtime Uploads ###
 uploads/
+crawler/debug_*.html
