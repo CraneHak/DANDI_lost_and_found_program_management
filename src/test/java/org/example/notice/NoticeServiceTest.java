@@ -81,11 +81,41 @@ class NoticeServiceTest {
         verify(noticeService).create(eq("u-student"), eq("내 신고가 접수되었습니다"), any());
         verify(noticeService).notifyAdmins(eq("새 신고"), any());
 
+        // 관리자가 분실 신고 화면에서 한 신고도 관리자 전원에게 새 신고 알림
+        clearInvocations(noticeService);
+        Report adminReport = new Report();
+        adminReport.setItemName("우산");
+        adminReport.setLocation("학생회관");
+        reportService.create(adminReport, new ReportActor("u-admin", "admin@dankook.ac.kr", true));
+        verify(noticeService).notifyAdmins(eq("새 신고"), any());
+
+        // 관리자 화면의 물품 직접 등록만 알림 없음
         clearInvocations(noticeService);
         Report fromAdmin = new Report();
         fromAdmin.setItemName("모자");
         fromAdmin.setLocation("체육관");
-        reportService.create(fromAdmin, new ReportActor("u-admin", "admin@dankook.ac.kr", true));
+        reportService.create(fromAdmin, new ReportActor("u-admin", "admin@dankook.ac.kr", true), true);
         verifyNoInteractions(noticeService);
+    }
+
+    @Test void jsonAdminDirectStringIsReadAsTrue() throws Exception {
+        // 프론트 JSON 경로는 값을 문자열 "true"로 보낸다
+        var body = new com.fasterxml.jackson.databind.ObjectMapper().readValue(
+                "{\"itemName\":\"모자\",\"location\":\"체육관\",\"adminDirect\":\"true\"}",
+                org.example.report.ReportController.CreateReportRequest.class);
+        assertEquals(Boolean.TRUE, body.adminDirect());
+    }
+
+    @Test void directRegistrationFlagFromStudentIsIgnored() {
+        NoticeService noticeService = mock(NoticeService.class);
+        ReportRepository reports = mock(ReportRepository.class);
+        when(reports.save(any(Report.class))).thenAnswer(call -> call.getArgument(0));
+        ReportService reportService = new ReportService(reports, noticeService, null, null, null);
+
+        Report report = new Report();
+        report.setItemName("지갑");
+        report.setLocation("도서관");
+        reportService.create(report, new ReportActor("u-student", "student@dankook.ac.kr", false), true);
+        verify(noticeService).notifyAdmins(eq("새 신고"), any());
     }
 }

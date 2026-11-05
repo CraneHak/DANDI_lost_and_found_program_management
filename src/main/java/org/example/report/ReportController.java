@@ -57,7 +57,7 @@ public class ReportController {
                 report.setReporterEmail(actor.email());
             }
 
-            Report saved = reportService.create(report, actor);
+            Report saved = reportService.create(report, actor, Boolean.TRUE.equals(body.adminDirect()));
             return ResponseEntity.status(HttpStatus.CREATED).body(ReportResponse.from(saved));
         } catch (IllegalArgumentException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
@@ -81,6 +81,7 @@ public class ReportController {
             @RequestParam(required = false) String imageUrl,
             @RequestParam(required = false) String photoUrl,
             @RequestParam(required = false) String mosaicImageUrl,
+            @RequestParam(required = false) String adminDirect,
             @RequestParam(value = "image", required = false) MultipartFile image,
             @RequestParam(value = "file", required = false) MultipartFile file
     ) {
@@ -104,7 +105,8 @@ public class ReportController {
                     photoUrl,
                     mosaicImageUrl,
                     image,
-                    file
+                    file,
+                    "true".equalsIgnoreCase(adminDirect)
             );
             return ResponseEntity.status(HttpStatus.CREATED).body(ReportResponse.from(saved));
         } catch (IllegalArgumentException ex) {
@@ -208,7 +210,8 @@ public class ReportController {
             String image,
             String imageUrl,
             String photoUrl,
-            String ownerEmail
+            String ownerEmail,
+            Boolean adminDirect
     ) {
         public String resolvedImage() {
             if (image != null && !image.isBlank()) return image.trim();

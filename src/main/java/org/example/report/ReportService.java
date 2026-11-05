@@ -44,6 +44,15 @@ public class ReportService {
 
     @Transactional
     public Report create(Report report, ReportActor actor) {
+        return create(report, actor, false);
+    }
+
+    /**
+     * @param adminDirect 관리자 화면의 물품 직접 등록이 만든 신고면 true — 이 경우만 알림을 보내지 않는다.
+     *                    관리자가 분실 신고 화면에서 한 신고는 일반 신고와 같이 관리자 전원에게 새 신고 알림.
+     */
+    @Transactional
+    public Report create(Report report, ReportActor actor, boolean adminDirect) {
         normalizeReportFields(report);
         report.setStatus(ReportStatus.PENDING);
         if (actor != null) {
@@ -53,8 +62,9 @@ public class ReportService {
             }
         }
         Report saved = reportRepository.save(report);
-        // 관리자가 물품을 직접 등록할 때 만드는 신고는 사용자 신고가 아니므로 알림을 보내지 않는다
-        if (actor != null && !actor.admin()) {
+        boolean directRegistration = adminDirect && actor != null && actor.admin();
+        if (actor != null && !directRegistration) {
+            // 신고자가 관리자면 NoticeService가 이 사용자용 알림을 건너뛴다
             noticeService.create(
                     actor.uid(),
                     "내 신고가 접수되었습니다",
@@ -92,7 +102,8 @@ public class ReportService {
             String photoUrl,
             String mosaicImageUrl,
             MultipartFile imagePart,
-            MultipartFile filePart
+            MultipartFile filePart,
+            boolean adminDirect
     ) throws IOException {
         Report report = new Report();
         report.setItemName(firstNonBlank(itemName, name));
@@ -108,7 +119,7 @@ public class ReportService {
             report.setReporterEmail(email);
         }
 
-        return create(report, actor);
+        return create(report, actor, adminDirect);
     }
 
     /**
