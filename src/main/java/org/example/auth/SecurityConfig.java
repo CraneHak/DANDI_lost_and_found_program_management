@@ -3,6 +3,7 @@ package org.example.auth;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -32,6 +33,13 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/public/**").permitAll()
+                        // 검수·공개·물품 관리는 관리자만 (신고 등록, 본인 신고 조회·삭제는 일반 사용자도 가능)
+                        .requestMatchers(HttpMethod.PATCH, "/api/reports/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/reports/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/lost-items/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/lost-items/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/lost-items/**").hasRole("ADMIN")
+                        .requestMatchers("/api/uploads/**").hasRole("ADMIN")
                         .requestMatchers("/api/reports/**").authenticated()
                         .requestMatchers("/api/notices/**").authenticated()
                         .requestMatchers("/api/users/keywords/**").authenticated()

@@ -257,6 +257,65 @@ class AuthSecurityIntegrationTest {
         verify(userProfileService, never()).promoteToAdmin(org.mockito.ArgumentMatchers.any());
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "PATCH /api/reports/1/status",
+            "PATCH /api/reports/1",
+            "PUT /api/reports/1",
+            "POST /api/lost-items",
+            "PATCH /api/lost-items/1",
+            "DELETE /api/lost-items/1",
+            "POST /api/uploads"
+    })
+    void nonAdminCannotUseAdminOnlyEndpoints(String endpoint) throws Exception {
+        when(firebaseTokenVerifier.verify(anyString()))
+                .thenReturn(new DecodedFirebaseUser("uid-student", "student@dankook.ac.kr", true));
+        String[] parts = endpoint.split(" ");
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .request(org.springframework.http.HttpMethod.valueOf(parts[0]), parts[1])
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer valid-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"resolved\",\"itemName\":\"x\"}"))
+                .andExpect(status().isForbidden());
+        verify(lostItemService, never()).delete(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void nonAdminSeesOnlyOwnReports() throws Exception {
+        when(firebaseTokenVerifier.verify(anyString()))
+                .thenReturn(new DecodedFirebaseUser("uid-me", "me@dankook.ac.kr", true));
+        org.example.report.Report mine = new org.example.report.Report();
+        mine.setItemName("mine");
+        mine.setReporterUid("uid-me");
+        org.example.report.Report other = new org.example.report.Report();
+        other.setItemName("other");
+        other.setReporterUid("uid-other");
+        other.setReporterEmail("other@dankook.ac.kr");
+        when(reportRepository.findAllByOrderByCreatedAtDesc()).thenReturn(java.util.List.of(mine, other));
+
+        mockMvc.perform(get("/api/reports").header(HttpHeaders.AUTHORIZATION, "Bearer valid-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].itemName").value("mine"));
+    }
+
+    @Test
+    void adminSeesAllReports() throws Exception {
+        when(firebaseTokenVerifier.verify(anyString()))
+                .thenReturn(new DecodedFirebaseUser("uid-boss", "boss@dankook.ac.kr", true));
+        org.example.report.Report a = new org.example.report.Report();
+        a.setItemName("a");
+        a.setReporterUid("uid-1");
+        org.example.report.Report b = new org.example.report.Report();
+        b.setItemName("b");
+        b.setReporterUid("uid-2");
+        when(reportRepository.findAllByOrderByCreatedAtDesc()).thenReturn(java.util.List.of(a, b));
+
+        mockMvc.perform(get("/api/reports").header(HttpHeaders.AUTHORIZATION, "Bearer valid-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
+    }
+
     @Test
     void visionOriginalFolderIsNotServedButMosaicIs() throws Exception {
         java.nio.file.Path original = java.nio.file.Path.of("uploads", "vision", "original", "test-original.png");

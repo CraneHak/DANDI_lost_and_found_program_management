@@ -37,7 +37,7 @@ class ReportActionLogTest {
     }
 
     @Test void studentDeletingOwnReportIsNotAnAdminAction() {
-        pending(8L, "지갑");
+        pending(8L, "지갑").setReporterUid("u-student");
         service.delete(8L, new ReportActor("u-student", "student@dankook.ac.kr", false));
         verify(logs, never()).record(anyString(), anyString(), anyString(), anyString(), anyString());
     }
@@ -46,5 +46,21 @@ class ReportActionLogTest {
         pending(9L, "모자");
         service.delete(9L, new ReportActor("u-admin", "admin@dankook.ac.kr", true));
         verify(logs).record(eq("u-admin"), any(), eq(AdminActionLogService.DELETE_REPORT), eq("report-9"), contains("모자"));
+    }
+
+    @Test void studentCannotDeleteSomeoneElsesReport() {
+        pending(10L, "가방").setReporterUid("u-other");
+        org.junit.jupiter.api.Assertions.assertThrows(SecurityException.class,
+                () -> service.delete(10L, new ReportActor("u-student", "student@dankook.ac.kr", false)));
+        verify(reports, never()).deleteById(10L);
+    }
+
+    @Test void studentCannotDeleteOwnReportAfterReview() {
+        Report r = pending(11L, "우산");
+        r.setReporterUid("u-student");
+        r.setStatus(ReportStatus.RESOLVED);
+        org.junit.jupiter.api.Assertions.assertThrows(SecurityException.class,
+                () -> service.delete(11L, new ReportActor("u-student", "student@dankook.ac.kr", false)));
+        verify(reports, never()).deleteById(11L);
     }
 }

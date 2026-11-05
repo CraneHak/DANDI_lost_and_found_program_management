@@ -46,6 +46,24 @@ public class ReportService {
         return reportRepository.findAllByOrderByCreatedAtDesc();
     }
 
+    /** 관리자는 전체, 일반 사용자는 본인 신고만 (다른 사람의 이메일·원본 사진 보호) */
+    public List<Report> findAllVisibleTo(ReportActor actor) {
+        List<Report> all = findAll();
+        if (actor.admin()) {
+            return all;
+        }
+        return all.stream().filter(report -> isOwner(report, actor)).toList();
+    }
+
+    private boolean isOwner(Report report, ReportActor actor) {
+        if (report.getReporterUid() != null && !report.getReporterUid().isBlank()) {
+            return report.getReporterUid().equals(actor.uid());
+        }
+        // uid가 없는 예전 신고는 이메일로 판단
+        return report.getReporterEmail() != null && actor.email() != null
+                && report.getReporterEmail().equalsIgnoreCase(actor.email());
+    }
+
     /** 누가 신고했든 관리자 전원에게 새 신고 알림 (관리자 물품 직접 등록은 신고를 만들지 않는다) */
     @Transactional
     public Report create(Report report, ReportActor actor) {
@@ -208,6 +226,15 @@ public class ReportService {
     public void delete(Long id, ReportActor actor) {
         Report report = reportRepository.findById(id)
                 .orElseThrow(() -> new ReportNotFoundException(id));
+        if (actor == null || !actor.admin()) {
+            if (actor == null || !isOwner(report, actor)) {
+                throw new SecurityException("본인 신고만 삭제할 수 있습니다.");
+            }
+            // 공개된 물품까지 지워지지 않도록 일반 사용자는 검수 전 신고만 (등록 화면도 검수 대기 신고만 보여줌)
+            if (report.getStatus() != ReportStatus.PENDING) {
+                throw new SecurityException("검수가 끝난 신고는 관리자에게 삭제를 요청해 주세요.");
+            }
+        }
         if (report.getStatus() == ReportStatus.PICKED_UP) {
             throw new IllegalStateException("최종 수령 완료된 신고는 삭제할 수 없습니다.");
         }

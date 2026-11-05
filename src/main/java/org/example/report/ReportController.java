@@ -28,8 +28,8 @@ public class ReportController {
     }
 
     @GetMapping
-    public List<ReportResponse> getAll() {
-        return reportService.findAll().stream()
+    public List<ReportResponse> getAll(Authentication authentication) {
+        return reportService.findAllVisibleTo(requireActor(authentication)).stream()
                 .map(ReportResponse::from)
                 .toList();
     }
@@ -156,6 +156,8 @@ public class ReportController {
         try {
             reportService.delete(id, toActor(authentication));
             return ResponseEntity.noContent().build();
+        } catch (SecurityException ex) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, ex.getMessage());
         } catch (IllegalStateException ex) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, ex.getMessage());
         } catch (ReportNotFoundException ex) {
