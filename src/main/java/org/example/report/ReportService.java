@@ -53,11 +53,18 @@ public class ReportService {
             }
         }
         Report saved = reportRepository.save(report);
-        if (actor != null) {
+        // 관리자가 물품을 직접 등록할 때 만드는 신고는 사용자 신고가 아니므로 알림을 보내지 않는다
+        if (actor != null && !actor.admin()) {
             noticeService.create(
                     actor.uid(),
-                    "분실물 신고 접수",
-                    "분실물 신고가 접수되었습니다: " + safe(saved.getItemName())
+                    "내 신고가 접수되었습니다",
+                    "신고하신 물품: " + safe(saved.getItemName())
+                            + "\n관리자가 확인한 뒤 결과를 알림으로 알려드립니다."
+            );
+            noticeService.notifyAdmins(
+                    "새 신고",
+                    "새 분실물 신고가 들어왔습니다: " + safe(saved.getItemName())
+                            + " (" + safe(saved.getLocation()) + ")\n관리자 화면의 검수 대기에서 확인해 주세요."
             );
         }
         return saved;
