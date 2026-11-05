@@ -67,6 +67,16 @@ class PickupPassServiceTest {
     }
 
     @Test
+    void issueAllowsStoredItemVisibleInCatalog() {
+        item.setStatus(ItemStatus.STORED);
+
+        var response = service.issuePass(user, new PickupPassService.IssuePickupPassRequest("10"));
+
+        assertEquals(ItemStatus.STORED, item.getStatus());
+        assertEquals("10", response.lostItemId());
+    }
+
+    @Test
     void issueRejectsReceivedItem() {
         item.setStatus(ItemStatus.RECEIVED);
 

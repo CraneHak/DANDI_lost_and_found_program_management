@@ -44,8 +44,9 @@ public class PickupPassService {
     }
 
     /**
-     * 공개(ACQUIRED) 물품에만 발급한다. 물품 상태는 바꾸지 않으므로 QR이 만료돼도 되돌릴 상태가 없다.
+     * 목록에서 수령 가능으로 표시되는 STORED/ACQUIRED 물품에 발급한다.
      * PENDING_RECEIPT는 이전 버전이 발급 시 남긴 값이라 발급 가능으로 취급한다.
+     * 발급은 물품 상태를 바꾸지 않으므로 QR이 만료돼도 되돌릴 상태가 없다.
      */
     @Transactional
     public IssuePickupPassResponse issuePass(FirebaseAuthenticationToken requester, IssuePickupPassRequest request) {
@@ -170,7 +171,7 @@ public class PickupPassService {
         if (status == ItemStatus.RECEIVED) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 수령 완료된 물품입니다.");
         }
-        if (status != ItemStatus.ACQUIRED && status != ItemStatus.PENDING_RECEIPT) {
+        if (status != ItemStatus.STORED && status != ItemStatus.ACQUIRED && status != ItemStatus.PENDING_RECEIPT) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "아직 수령할 수 없는 물품입니다.");
         }
     }
