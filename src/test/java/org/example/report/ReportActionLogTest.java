@@ -15,8 +15,10 @@ import static org.mockito.Mockito.*;
 class ReportActionLogTest {
     private final ReportRepository reports = mock(ReportRepository.class);
     private final AdminActionLogService logs = mock(AdminActionLogService.class);
+    private final org.example.service.S3Service s3 = mock(org.example.service.S3Service.class);
+    private final org.example.common.ImageUrlService imageUrls = mock(org.example.common.ImageUrlService.class);
     private final ReportService service =
-            new ReportService(reports, mock(NoticeService.class), mock(org.example.service.LostItemService.class), null, null, logs);
+            new ReportService(reports, mock(NoticeService.class), mock(org.example.service.LostItemService.class), s3, imageUrls, logs);
 
     private Report pending(long id, String name) {
         Report r = new Report();
@@ -62,5 +64,34 @@ class ReportActionLogTest {
         org.junit.jupiter.api.Assertions.assertThrows(SecurityException.class,
                 () -> service.delete(11L, new ReportActor("u-student", "student@dankook.ac.kr", false)));
         verify(reports, never()).deleteById(11L);
+    }
+
+    private static final String S3_ORIGINAL = "https://dandi-lost-items.s3.ap-northeast-2.amazonaws.com/lost-items/a.jpg";
+
+    @Test void deletingReportAlsoDeletesItsS3Photo() {
+        Report r = pending(12L, "지갑");
+        r.setImage(S3_ORIGINAL);
+        service.delete(12L, new ReportActor("u-admin", "admin@dankook.ac.kr", true));
+        verify(s3).deleteByUrlIfPresent(S3_ORIGINAL);
+    }
+
+    @Test void originalIsDeletedOnlyWhenReplacedByMosaic() {
+        Report r = pending(13L, "학생증");
+        r.setImage(S3_ORIGINAL);
+        when(imageUrls.normalizeForStorage("/files/vision/mosaic/m.png")).thenReturn("/files/vision/mosaic/m.png");
+        UpdateReportDetailsRequest toMosaic = new com.fasterxml.jackson.databind.ObjectMapper().convertValue(
+                java.util.Map.of("image", "/files/vision/mosaic/m.png"), UpdateReportDetailsRequest.class);
+        service.updateDetails(13L, toMosaic, new ReportActor("u-admin", "admin@dankook.ac.kr", true));
+        verify(s3).deleteByUrlIfPresent(S3_ORIGINAL);
+    }
+
+    @Test void sameOriginalIsNotDeletedWhenNotMosaic() {
+        Report r = pending(14L, "지갑");
+        r.setImage(S3_ORIGINAL);
+        when(imageUrls.normalizeForStorage(S3_ORIGINAL)).thenReturn(S3_ORIGINAL);
+        UpdateReportDetailsRequest same = new com.fasterxml.jackson.databind.ObjectMapper().convertValue(
+                java.util.Map.of("image", S3_ORIGINAL), UpdateReportDetailsRequest.class);
+        service.updateDetails(14L, same, new ReportActor("u-admin", "admin@dankook.ac.kr", true));
+        verify(s3, never()).deleteByUrlIfPresent(S3_ORIGINAL);
     }
 }

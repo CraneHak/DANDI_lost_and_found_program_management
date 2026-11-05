@@ -171,12 +171,19 @@ public class ReportService {
             report.setLostAt(lostAt);
         }
         String image = body.resolvedImage();
+        String replacedOriginal = null;
         if (image != null) {
-            report.setImage(imageUrlService.normalizeForStorage(image));
+            String stored = imageUrlService.normalizeForStorage(image);
+            // 모자이크로 바뀔 때만 이전 원본을 지운다 (같은 사진을 다른 표기로 보낸 경우 지우지 않도록)
+            if (isMosaic(stored) && report.getImage() != null && !isMosaic(report.getImage())) {
+                replacedOriginal = report.getImage();
+            }
+            report.setImage(stored);
         }
 
         normalizeReportFields(report);
         Report saved = reportRepository.save(report);
+        s3Service.deleteByUrlIfPresent(replacedOriginal);
         logAdmin(actor, AdminActionLogService.EDIT_REPORT, saved,
                 "[" + safe(saved.getItemName()) + "] 검수 대기 신고 내용 수정");
         return saved;
@@ -240,6 +247,8 @@ public class ReportService {
         }
         lostItemService.deleteByReportId(id);
         reportRepository.deleteById(id);
+        // 신고 사진이 S3에 주인 없이 남지 않게 함께 지운다 (연결 물품 사진은 deleteByReportId가 지움)
+        s3Service.deleteByUrlIfPresent(report.getImage());
         logAdmin(actor, AdminActionLogService.DELETE_REPORT, report,
                 "[" + safe(report.getItemName()) + "] 신고 삭제");
     }
@@ -315,6 +324,10 @@ public class ReportService {
         }
         adminActionLogService.record(actor.uid(), actor.email(), action,
                 report.getId() != null ? "report-" + report.getId() : null, message);
+    }
+
+    private static boolean isMosaic(String imageUrl) {
+        return imageUrl != null && imageUrl.contains("/vision/mosaic/");
     }
 
     private String statusLabel(ReportStatus status) {
