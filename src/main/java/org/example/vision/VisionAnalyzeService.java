@@ -1,5 +1,6 @@
 package org.example.vision;
 
+import org.example.common.ApiTime;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -72,7 +73,7 @@ public class VisionAnalyzeService {
                 maskedOcrResult.maskedText(),
                 analysisResult.objectLabels(),
                 analysisResult.dominantColors(),
-                saved != null ? saved.getCreatedAt() : LocalDateTime.now()
+                ApiTime.utc(saved != null ? saved.getCreatedAt() : LocalDateTime.now())
         );
     }
 
@@ -129,7 +130,7 @@ public class VisionAnalyzeService {
                 record.getMaskedText(),
                 fromJson(record.getObjectLabelsJson()),
                 fromJson(record.getDominantColorsJson()),
-                record.getCreatedAt()
+                ApiTime.utc(record.getCreatedAt())
         );
     }
 

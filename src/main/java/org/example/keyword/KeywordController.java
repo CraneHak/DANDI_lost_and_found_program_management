@@ -1,5 +1,6 @@
 package org.example.keyword;
 
+import org.example.common.ApiTime;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.example.auth.FirebaseAuthenticationToken;
@@ -9,7 +10,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @RestController
@@ -66,13 +66,11 @@ public class KeywordController {
     }
 
     public record KeywordResponse(String id, String keyword, String createdAt) {
-        private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
-
         static KeywordResponse from(Keyword k) {
             return new KeywordResponse(
                     String.valueOf(k.getId()),
                     k.getKeyword(),
-                    k.getCreatedAt() != null ? k.getCreatedAt().format(FMT) : null
+                    ApiTime.utc(k.getCreatedAt())
             );
         }
     }

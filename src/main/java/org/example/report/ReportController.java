@@ -1,5 +1,6 @@
 package org.example.report;
 
+import org.example.common.ApiTime;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -13,7 +14,6 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
@@ -57,7 +57,7 @@ public class ReportController {
                 report.setReporterEmail(actor.email());
             }
 
-            Report saved = reportService.create(report, actor, Boolean.TRUE.equals(body.adminDirect()));
+            Report saved = reportService.create(report, actor);
             return ResponseEntity.status(HttpStatus.CREATED).body(ReportResponse.from(saved));
         } catch (IllegalArgumentException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
@@ -81,7 +81,6 @@ public class ReportController {
             @RequestParam(required = false) String imageUrl,
             @RequestParam(required = false) String photoUrl,
             @RequestParam(required = false) String mosaicImageUrl,
-            @RequestParam(required = false) String adminDirect,
             @RequestParam(value = "image", required = false) MultipartFile image,
             @RequestParam(value = "file", required = false) MultipartFile file
     ) {
@@ -105,8 +104,7 @@ public class ReportController {
                     photoUrl,
                     mosaicImageUrl,
                     image,
-                    file,
-                    "true".equalsIgnoreCase(adminDirect)
+                    file
             );
             return ResponseEntity.status(HttpStatus.CREATED).body(ReportResponse.from(saved));
         } catch (IllegalArgumentException ex) {
@@ -154,9 +152,9 @@ public class ReportController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(Authentication authentication, @PathVariable Long id) {
         try {
-            reportService.delete(id);
+            reportService.delete(id, toActor(authentication));
             return ResponseEntity.noContent().build();
         } catch (IllegalStateException ex) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, ex.getMessage());
@@ -171,7 +169,7 @@ public class ReportController {
             ReportStatus status
     ) {
         try {
-            Report saved = reportService.updateStatus(id, status);
+            Report saved = reportService.updateStatus(id, status, toActor(authentication));
             return ResponseEntity.ok(Map.of(
                     "message", "상태 변경이 완료되었습니다.",
                     "id", saved.getId(),
@@ -210,8 +208,7 @@ public class ReportController {
             String image,
             String imageUrl,
             String photoUrl,
-            String ownerEmail,
-            Boolean adminDirect
+            String ownerEmail
     ) {
         public String resolvedImage() {
             if (image != null && !image.isBlank()) return image.trim();
@@ -245,7 +242,6 @@ public class ReportController {
             String ownerEmail,
             String ownerName
     ) {
-        private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
         static ReportResponse from(Report r) {
             String image = r.getImage();
@@ -264,8 +260,8 @@ public class ReportController {
                     image,
                     image,
                     r.getStatus(),
-                    r.getCreatedAt() != null ? r.getCreatedAt().format(FMT) : null,
-                    r.getPickedUpAt() != null ? r.getPickedUpAt().format(FMT) : null,
+                    ApiTime.utc(r.getCreatedAt()),
+                    ApiTime.utc(r.getPickedUpAt()),
                     r.getReporterEmail(),
                     null
             );

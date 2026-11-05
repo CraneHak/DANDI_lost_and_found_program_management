@@ -1,5 +1,6 @@
 package org.example.pickup;
 
+import org.example.adminlog.AdminActionLogService;
 import org.example.auth.FirebaseAuthenticationToken;
 import org.example.entity.ItemStatus;
 import org.example.entity.LostItem;
@@ -28,19 +29,22 @@ public class PickupPassService {
     private final CollectionLogRepository collectionLogRepository;
     private final ReportRepository reportRepository;
     private final NoticeService noticeService;
+    private final AdminActionLogService adminActionLogService;
 
     public PickupPassService(
             LostItemRepository lostItemRepository,
             PickupPassRepository pickupPassRepository,
             CollectionLogRepository collectionLogRepository,
             ReportRepository reportRepository,
-            NoticeService noticeService
+            NoticeService noticeService,
+            AdminActionLogService adminActionLogService
     ) {
         this.lostItemRepository = lostItemRepository;
         this.pickupPassRepository = pickupPassRepository;
         this.collectionLogRepository = collectionLogRepository;
         this.reportRepository = reportRepository;
         this.noticeService = noticeService;
+        this.adminActionLogService = adminActionLogService;
     }
 
     /**
@@ -132,6 +136,10 @@ public class PickupPassService {
         verifyLog.setCollectedAt(saved.getUsedAt());
         verifyLog.setAction(CollectionAction.QR_VERIFIED);
         collectionLogRepository.save(verifyLog);
+        adminActionLogService.record(verifier.getUid(), verifier.getEmail(), AdminActionLogService.PICKUP_VERIFY,
+                "lost-item-" + lostItem.getId(),
+                "[" + (lostItem.getItemName() == null ? "물품" : lostItem.getItemName()) + "] QR 수령 인증 — 인수자: "
+                        + (saved.getRequesterEmail() == null ? "이메일 없음" : saved.getRequesterEmail()));
 
         notifyPickedUp(saved, report, lostItem);
 
@@ -148,22 +156,32 @@ public class PickupPassService {
     @Transactional(readOnly = true)
     public List<MyPickupPassResponse> findMyPasses(FirebaseAuthenticationToken requester) {
         return pickupPassRepository.findAllByRequesterUidWithItem(requester.getUid()).stream()
-                .map(pass -> {
-                    LostItem item = pass.getLostItem();
-                    return new MyPickupPassResponse(
-                            String.valueOf(pass.getId()),
-                            String.valueOf(item.getId()),
-                            item.getReportId() != null ? String.valueOf(item.getReportId()) : null,
-                            item.getItemName(),
-                            item.getStoredLocation(),
-                            pass.getRequesterEmail(),
-                            pass.getToken(),
-                            pass.getIssuedAt().toString(),
-                            pass.getExpiresAt().toString(),
-                            pass.getUsedAt() == null ? null : pass.getUsedAt().toString()
-                    );
-                })
+                .map(this::toPassResponse)
                 .toList();
+    }
+
+    /** 관리자 화면: 모든 사용자가 발급받은 수령 코드 (/api/admin/** 는 관리자만 접근) */
+    @Transactional(readOnly = true)
+    public List<MyPickupPassResponse> findAllPasses() {
+        return pickupPassRepository.findAllWithItem().stream()
+                .map(this::toPassResponse)
+                .toList();
+    }
+
+    private MyPickupPassResponse toPassResponse(PickupPass pass) {
+        LostItem item = pass.getLostItem();
+        return new MyPickupPassResponse(
+                String.valueOf(pass.getId()),
+                String.valueOf(item.getId()),
+                item.getReportId() != null ? String.valueOf(item.getReportId()) : null,
+                item.getItemName(),
+                item.getStoredLocation(),
+                pass.getRequesterEmail(),
+                pass.getToken(),
+                pass.getIssuedAt().toString(),
+                pass.getExpiresAt().toString(),
+                pass.getUsedAt() == null ? null : pass.getUsedAt().toString()
+        );
     }
 
     private void requireIssuable(LostItem lostItem) {

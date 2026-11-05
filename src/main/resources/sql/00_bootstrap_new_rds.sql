@@ -30,7 +30,8 @@ CREATE TABLE IF NOT EXISTS app_user (
     profile_completed TINYINT(1) NOT NULL DEFAULT 0,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
-    last_login_at DATETIME
+    last_login_at DATETIME,
+    keyword_alert_enabled TINYINT(1) NOT NULL DEFAULT 1
 ) CHARACTER SET utf8mb4;
 
 CREATE TABLE IF NOT EXISTS report (
@@ -153,3 +154,15 @@ CREATE TABLE IF NOT EXISTS lost_item_analysis (
     dominant_colors_json LONGTEXT,
     created_at DATETIME NOT NULL
 ) CHARACTER SET utf8mb4;
+
+CREATE TABLE IF NOT EXISTS admin_action_log (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    action VARCHAR(30) NOT NULL,
+    message VARCHAR(500) NOT NULL,
+    target_id VARCHAR(64),
+    actor_uid VARCHAR(128),
+    actor_email VARCHAR(255),
+    created_at DATETIME NOT NULL
+) CHARACTER SET utf8mb4;
+
+CREATE INDEX idx_admin_action_log_created_at ON admin_action_log (created_at);

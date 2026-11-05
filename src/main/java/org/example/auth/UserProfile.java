@@ -42,6 +42,10 @@ public class UserProfile {
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
+    /** 관심 키워드 알림 받기 (마이페이지 스위치). 서버가 키워드 알림을 보내기 전에 확인한다. */
+    @Column(name = "keyword_alert_enabled", nullable = false)
+    private boolean keywordAlertEnabled = true;
+
     @PrePersist
     public void onCreate() {
         LocalDateTime now = LocalDateTime.now();
@@ -90,6 +94,14 @@ public class UserProfile {
 
     public void setStudentNo(String studentNo) {
         this.studentNo = studentNo;
+    }
+
+    public boolean isKeywordAlertEnabled() {
+        return keywordAlertEnabled;
+    }
+
+    public void setKeywordAlertEnabled(boolean keywordAlertEnabled) {
+        this.keywordAlertEnabled = keywordAlertEnabled;
     }
 
     public UserRole getRole() {

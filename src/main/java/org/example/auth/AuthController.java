@@ -91,6 +91,22 @@ public class AuthController {
         return toResponse(token, userProfile, accessToken, admin);
     }
 
+    /** 마이페이지 '매칭 알림 받기' 스위치 — 브라우저가 아니라 DB에 저장해 다른 기기에서도 유지 */
+    @PatchMapping("/users/me/preferences")
+    public LoginResponse updateMyPreferences(
+            Authentication authentication,
+            HttpServletRequest request,
+            @RequestBody PreferencesRequest requestBody
+    ) {
+        FirebaseAuthenticationToken token = requireFirebaseToken(authentication);
+        if (requestBody == null || requestBody.keywordAlertEnabled() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "keywordAlertEnabled is required.");
+        }
+        UserProfile userProfile = userProfileService.updateKeywordAlert(
+                token.getUid(), token.getEmail(), requestBody.keywordAlertEnabled());
+        return toResponse(token, userProfile, resolveAccessToken(request, null), resolveAdmin(token, userProfile));
+    }
+
     private FirebaseAuthenticationToken requireFirebaseToken(Authentication authentication) {
         if (!(authentication instanceof FirebaseAuthenticationToken token)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication is required.");
@@ -144,8 +160,12 @@ public class AuthController {
                 token.getEmail(),
                 userProfile.getName(),
                 userProfile.getDepartment(),
-                userProfile.getStudentNo()
+                userProfile.getStudentNo(),
+                userProfile.isKeywordAlertEnabled()
         );
+    }
+
+    public record PreferencesRequest(Boolean keywordAlertEnabled) {
     }
 
     public record LoginRequest(String idToken) {
@@ -168,7 +188,8 @@ public class AuthController {
             String email,
             String name,
             String department,
-            String studentId
+            String studentId,
+            boolean keywordAlertEnabled
     ) {
     }
 }

@@ -1,6 +1,5 @@
 package org.example.vision;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 public record VisionAnalyzeResponse(
@@ -12,6 +11,6 @@ public record VisionAnalyzeResponse(
         String maskedText,
         List<String> objectLabels,
         List<String> dominantColors,
-        LocalDateTime createdAt
+        String createdAt
 ) {
 }

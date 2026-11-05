@@ -24,5 +24,8 @@ public interface PickupPassRepository extends JpaRepository<PickupPass, Long> {
     @Query("select p from PickupPass p join fetch p.lostItem where p.requesterUid = :requesterUid order by p.issuedAt desc")
     List<PickupPass> findAllByRequesterUidWithItem(@Param("requesterUid") String requesterUid);
 
+    @Query("select p from PickupPass p join fetch p.lostItem order by p.issuedAt desc")
+    List<PickupPass> findAllWithItem();
+
     void deleteByLostItem_Id(Integer lostItemId);
 }

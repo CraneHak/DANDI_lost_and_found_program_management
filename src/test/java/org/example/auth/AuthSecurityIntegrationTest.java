@@ -50,6 +50,7 @@ class AuthSecurityIntegrationTest {
     @MockBean private org.example.pickup.PickupPassRepository pickupPassRepository;
     @MockBean private org.example.notice.NoticeRepository noticeRepository;
     @MockBean private org.example.vision.LostItemAnalysisRepository lostItemAnalysisRepository;
+    @MockBean private org.example.adminlog.AdminActionLogRepository adminActionLogRepository;
 
     @MockBean
     private LostItemService lostItemService;
@@ -254,6 +255,33 @@ class AuthSecurityIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isAdmin").value(true));
         verify(userProfileService, never()).promoteToAdmin(org.mockito.ArgumentMatchers.any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/api/admin/action-logs", "/api/admin/pickup-passes"})
+    void studentsCannotReadAdminLists(String path) throws Exception {
+        when(firebaseTokenVerifier.verify(anyString()))
+                .thenReturn(new DecodedFirebaseUser("uid-student", "student@dankook.ac.kr", true));
+        mockMvc.perform(get(path).header(HttpHeaders.AUTHORIZATION, "Bearer valid-token"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void keywordAlertPreferenceIsSavedOnServer() throws Exception {
+        when(firebaseTokenVerifier.verify(anyString()))
+                .thenReturn(new DecodedFirebaseUser("uid-pref", "pref@dankook.ac.kr", true));
+        UserProfile profile = new UserProfile();
+        profile.setFirebaseUid("uid-pref");
+        profile.setKeywordAlertEnabled(false);
+        when(userProfileService.updateKeywordAlert("uid-pref", "pref@dankook.ac.kr", false)).thenReturn(profile);
+
+        mockMvc.perform(patch("/api/users/me/preferences")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer valid-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"keywordAlertEnabled\":false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.keywordAlertEnabled").value(false));
+        verify(userProfileService).updateKeywordAlert("uid-pref", "pref@dankook.ac.kr", false);
     }
 
     @Test

@@ -1,5 +1,6 @@
 package org.example.controller;
 
+import org.example.common.ApiTime;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.example.entity.ItemStatus;
 import org.example.entity.LostItem;
@@ -54,8 +55,8 @@ public record LostItemResponse(
                 imageUrl,
                 item.getContact() != null && !item.getContact().isBlank() ? item.getContact() : null,
                 item.getStatus(),
-                formatDateTime(item.getCreatedAt()),
-                formatDateTime(item.getUpdatedAt()),
+                ApiTime.utc(item.getCreatedAt()),
+                ApiTime.utc(item.getUpdatedAt()),
                 foundAt
         );
     }

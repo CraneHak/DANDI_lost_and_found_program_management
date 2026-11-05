@@ -32,7 +32,8 @@ class PickupPassServiceTest {
             pickupPassRepository,
             mock(CollectionLogRepository.class),
             reportRepository,
-            mock(NoticeService.class)
+            mock(NoticeService.class),
+            mock(org.example.adminlog.AdminActionLogService.class)
     );
     private final FirebaseAuthenticationToken user = new FirebaseAuthenticationToken("u1", "u1@dankook.ac.kr", false);
     private final FirebaseAuthenticationToken admin = new FirebaseAuthenticationToken("a1", "a1@dankook.ac.kr", true);

@@ -1,5 +1,6 @@
 package org.example.notice;
 
+import org.example.common.ApiTime;
 import org.example.auth.FirebaseAuthenticationToken;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -77,7 +78,7 @@ public class NoticeController {
                     n.getTitle(),
                     n.getMessage(),
                     n.isRead(),
-                    n.getCreatedAt() != null ? n.getCreatedAt().toString() : null
+                    ApiTime.utc(n.getCreatedAt())
             );
         }
     }

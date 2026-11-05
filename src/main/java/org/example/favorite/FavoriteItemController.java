@@ -1,5 +1,6 @@
 package org.example.favorite;
 
+import org.example.common.ApiTime;
 import org.example.auth.FirebaseAuthenticationToken;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -8,7 +9,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @RestController
@@ -59,12 +59,10 @@ public class FavoriteItemController {
     }
 
     public record FavoriteResponse(String lostItemId, String createdAt) {
-        private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
-
         static FavoriteResponse from(FavoriteItem f) {
             return new FavoriteResponse(
                     String.valueOf(f.getLostItemId()),
-                    f.getCreatedAt() != null ? f.getCreatedAt().format(FMT) : null
+                    ApiTime.utc(f.getCreatedAt())
             );
         }
     }

@@ -1,5 +1,6 @@
 package org.example.report;
 
+import org.example.adminlog.AdminActionLogService;
 import org.example.common.ImageUrlService;
 import org.example.entity.ItemStatus;
 import org.example.entity.LostItem;
@@ -23,36 +24,31 @@ public class ReportService {
     private final LostItemService lostItemService;
     private final S3Service s3Service;
     private final ImageUrlService imageUrlService;
+    private final AdminActionLogService adminActionLogService;
 
     public ReportService(
             ReportRepository reportRepository,
             NoticeService noticeService,
             LostItemService lostItemService,
             S3Service s3Service,
-            ImageUrlService imageUrlService
+            ImageUrlService imageUrlService,
+            AdminActionLogService adminActionLogService
     ) {
         this.reportRepository = reportRepository;
         this.noticeService = noticeService;
         this.lostItemService = lostItemService;
         this.s3Service = s3Service;
         this.imageUrlService = imageUrlService;
+        this.adminActionLogService = adminActionLogService;
     }
 
     public List<Report> findAll() {
         return reportRepository.findAllByOrderByCreatedAtDesc();
     }
 
+    /** 누가 신고했든 관리자 전원에게 새 신고 알림 (관리자 물품 직접 등록은 신고를 만들지 않는다) */
     @Transactional
     public Report create(Report report, ReportActor actor) {
-        return create(report, actor, false);
-    }
-
-    /**
-     * @param adminDirect 관리자 화면의 물품 직접 등록이 만든 신고면 true — 이 경우만 알림을 보내지 않는다.
-     *                    관리자가 분실 신고 화면에서 한 신고는 일반 신고와 같이 관리자 전원에게 새 신고 알림.
-     */
-    @Transactional
-    public Report create(Report report, ReportActor actor, boolean adminDirect) {
         normalizeReportFields(report);
         report.setStatus(ReportStatus.PENDING);
         if (actor != null) {
@@ -62,8 +58,7 @@ public class ReportService {
             }
         }
         Report saved = reportRepository.save(report);
-        boolean directRegistration = adminDirect && actor != null && actor.admin();
-        if (actor != null && !directRegistration) {
+        if (actor != null) {
             // 신고자가 관리자면 NoticeService가 이 사용자용 알림을 건너뛴다
             noticeService.create(
                     actor.uid(),
@@ -102,8 +97,7 @@ public class ReportService {
             String photoUrl,
             String mosaicImageUrl,
             MultipartFile imagePart,
-            MultipartFile filePart,
-            boolean adminDirect
+            MultipartFile filePart
     ) throws IOException {
         Report report = new Report();
         report.setItemName(firstNonBlank(itemName, name));
@@ -119,7 +113,7 @@ public class ReportService {
             report.setReporterEmail(email);
         }
 
-        return create(report, actor, adminDirect);
+        return create(report, actor);
     }
 
     /**
@@ -164,11 +158,14 @@ public class ReportService {
         }
 
         normalizeReportFields(report);
-        return reportRepository.save(report);
+        Report saved = reportRepository.save(report);
+        logAdmin(actor, AdminActionLogService.EDIT_REPORT, saved,
+                "[" + safe(saved.getItemName()) + "] 검수 대기 신고 내용 수정");
+        return saved;
     }
 
     @Transactional
-    public Report updateStatus(Long id, ReportStatus newStatus) {
+    public Report updateStatus(Long id, ReportStatus newStatus, ReportActor actor) {
         Report report = reportRepository.findById(id)
                 .orElseThrow(() -> new ReportNotFoundException(id));
         validateStatusTransition(report.getStatus(), newStatus);
@@ -179,6 +176,8 @@ public class ReportService {
             report.setPickedUpAt(null);
         }
         Report saved = reportRepository.save(report);
+        logAdmin(actor, AdminActionLogService.REVIEW, saved,
+                "[" + safe(saved.getItemName()) + "] 신고를 " + statusLabel(newStatus) + "(으)로 처리");
 
         // 처리 결과는 처리자(관리자)가 아니라 신고자에게 보낸다.
         String reporterUid = saved.getReporterUid();
@@ -206,7 +205,7 @@ public class ReportService {
     }
 
     @Transactional
-    public void delete(Long id) {
+    public void delete(Long id, ReportActor actor) {
         Report report = reportRepository.findById(id)
                 .orElseThrow(() -> new ReportNotFoundException(id));
         if (report.getStatus() == ReportStatus.PICKED_UP) {
@@ -214,6 +213,8 @@ public class ReportService {
         }
         lostItemService.deleteByReportId(id);
         reportRepository.deleteById(id);
+        logAdmin(actor, AdminActionLogService.DELETE_REPORT, report,
+                "[" + safe(report.getItemName()) + "] 신고 삭제");
     }
 
     private void normalizeReportFields(Report report) {
@@ -278,6 +279,24 @@ public class ReportService {
         if (from == ReportStatus.UNAVAILABLE && to == ReportStatus.PICKED_UP) {
             throw new IllegalStateException("습득 불가 상태에서는 바로 수령 완료로 변경할 수 없습니다.");
         }
+    }
+
+    /** 관리자가 한 작업만 작업 이력에 남긴다 */
+    private void logAdmin(ReportActor actor, String action, Report report, String message) {
+        if (actor == null || !actor.admin()) {
+            return;
+        }
+        adminActionLogService.record(actor.uid(), actor.email(), action,
+                report.getId() != null ? "report-" + report.getId() : null, message);
+    }
+
+    private String statusLabel(ReportStatus status) {
+        return switch (status) {
+            case RESOLVED -> "습득 완료";
+            case UNAVAILABLE -> "습득 불가";
+            case PICKED_UP -> "최종 수령 완료";
+            case PENDING -> "검수 대기";
+        };
     }
 
     private String safe(String value) {
