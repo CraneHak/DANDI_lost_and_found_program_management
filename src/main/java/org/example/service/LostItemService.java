@@ -145,12 +145,7 @@ public class LostItemService {
         parseStoredDate(firstNonBlank(lostAt, foundAt, acquiredAt, createdAt, registeredAt, storedDate))
                 .ifPresent(item::setStoredDate);
 
-        // 신분증·카드류 원본 파일은 S3에 올리지도 않는다 (모자이크 URL만 허용)
-        boolean sensitive = isSensitiveItem(item.getItemType(), item.getItemName());
-        String image = sensitive
-                ? java.util.stream.Stream.of(mosaicImageUrl, imageUrl, photoUrl, imageField)
-                        .filter(LostItemService::isMosaicImage).map(String::trim).findFirst().orElse(null)
-                : resolveLostItemImage(imagePart, filePart, imageUrl, imageField, photoUrl, mosaicImageUrl);
+        String image = resolveLostItemImage(imagePart, filePart, imageUrl, imageField, photoUrl, mosaicImageUrl);
         if (image != null) {
             item.setImageUrl(image);
         }
@@ -238,41 +233,17 @@ public class LostItemService {
         }
         if (request.image() != null && !request.image().isBlank()) {
             item.setImageUrl(imageUrlService.normalizeForStorage(request.image()));
-            // 이미지를 새로 지정할 때만 검사 (글자만 고칠 때 기존 크롤링 물품 이미지가 사라지지 않도록)
-            dropUnmaskedSensitiveImage(item);
         }
         return repository.save(item);
     }
 
     /** 키워드 알림은 처음 공개될 때 한 번만 보낸다 (수정·재승인·중복 등록 요청에는 보내지 않음). */
     private LostItem persist(LostItem item, boolean wasPublic) {
-        dropUnmaskedSensitiveImage(item);
         LostItem saved = repository.save(item);
         if (!wasPublic) {
             keywordAlertService.notifyMatchingUsers(saved);
         }
         return saved;
-    }
-
-    // ponytail: 이름·종류 키워드로 판단 (category 테이블과 item_type이 연결돼 있지 않음). 카드지갑처럼 걸리는 물품은 대체 이미지로 표시된다.
-    private static final List<String> SENSITIVE_KEYWORDS =
-            List.of("신분증", "학생증", "주민등록", "운전면허", "여권", "외국인등록", "카드");
-
-    static boolean isSensitiveItem(String itemType, String itemName) {
-        String text = ((itemType == null ? "" : itemType) + " " + (itemName == null ? "" : itemName));
-        return SENSITIVE_KEYWORDS.stream().anyMatch(text::contains);
-    }
-
-    public static boolean isMosaicImage(String imageUrl) {
-        return imageUrl != null && imageUrl.contains("/files/vision/mosaic/");
-    }
-
-    /** 신분증·카드류는 모자이크 이미지만 공개한다. 원본이면 이미지 없이 공개(프론트가 대체 이미지 표시). */
-    private void dropUnmaskedSensitiveImage(LostItem item) {
-        if (isSensitiveItem(item.getItemType(), item.getItemName()) && item.getImageUrl() != null
-                && !isMosaicImage(item.getImageUrl())) {
-            item.setImageUrl(null);
-        }
     }
 
     private boolean isPublic(LostItem item) {

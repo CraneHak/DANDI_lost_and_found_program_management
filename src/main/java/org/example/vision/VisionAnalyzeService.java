@@ -53,14 +53,12 @@ public class VisionAnalyzeService {
         VisionAnalysisResult analysisResult = visionClient.analyze(imageBytes, documentType.requiresOcr());
         MaskedOcrResult maskedOcrResult = visionMaskingService.apply(documentType, analysisResult);
 
-        // 원본은 디스크에 저장하지 않는다 (분석은 메모리에서만). 모자이크만 남긴다.
+        String originalPath = visionImageStore.saveOriginal(imageBytes, extension);
         String mosaicPath = null;
         if (documentType.requiresOcr() && !maskedOcrResult.sensitiveBoxes().isEmpty()) {
             byte[] mosaicBytes = imageMosaicService.mosaic(imageBytes, maskedOcrResult.sensitiveBoxes(), extension);
             mosaicPath = visionImageStore.saveMosaic(mosaicBytes, extension);
         }
-        // ponytail: original_image_path가 NOT NULL이라 DDL 없이 빈 값을 기록. 컬럼을 nullable로 바꾸면 null로.
-        String originalPath = "";
 
         LostItemAnalysisRecord saved = saveRecord(documentType, analysisResult, maskedOcrResult, originalPath, mosaicPath)
                 .orElse(null);
