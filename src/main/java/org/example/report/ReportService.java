@@ -42,6 +42,24 @@ public class ReportService {
         return reportRepository.findAllByOrderByCreatedAtDesc();
     }
 
+    /** 관리자는 전체, 일반 사용자는 본인 신고만 (신고자 이메일·원본 사진 보호) */
+    public List<Report> findAllVisibleTo(ReportActor actor) {
+        List<Report> all = findAll();
+        if (actor.admin()) {
+            return all;
+        }
+        return all.stream().filter(report -> isOwner(report, actor)).toList();
+    }
+
+    private boolean isOwner(Report report, ReportActor actor) {
+        if (report.getReporterUid() != null && !report.getReporterUid().isBlank()) {
+            return report.getReporterUid().equals(actor.uid());
+        }
+        // uid가 없는 예전 신고는 이메일로 판단
+        return report.getReporterEmail() != null && actor.email() != null
+                && report.getReporterEmail().equalsIgnoreCase(actor.email());
+    }
+
     @Transactional
     public Report create(Report report, ReportActor actor) {
         normalizeReportFields(report);
@@ -141,12 +159,22 @@ public class ReportService {
             report.setLostAt(lostAt);
         }
         String image = body.resolvedImage();
+        String replacedImage = null;
         if (image != null) {
-            report.setImage(imageUrlService.normalizeForStorage(image));
+            String stored = imageUrlService.normalizeForStorage(image);
+            // 모자이크로 바뀔 때만 이전 원본을 지운다 (같은 객체를 다른 표기로 보낸 경우 삭제하지 않도록)
+            if (report.getImage() != null && LostItemService.isMosaicImage(stored)
+                    && !LostItemService.isMosaicImage(report.getImage())) {
+                replacedImage = report.getImage();
+            }
+            report.setImage(stored);
         }
 
         normalizeReportFields(report);
-        return reportRepository.save(report);
+        Report saved = reportRepository.save(report);
+        // 모자이크 등으로 교체된 신고자 원본은 S3에 남기지 않는다
+        s3Service.deleteByUrlIfPresent(replacedImage);
+        return saved;
     }
 
     @Transactional
@@ -188,13 +216,23 @@ public class ReportService {
     }
 
     @Transactional
-    public void delete(Long id) {
+    public void delete(Long id, ReportActor actor) {
         Report report = reportRepository.findById(id)
                 .orElseThrow(() -> new ReportNotFoundException(id));
+        if (!actor.admin()) {
+            if (!isOwner(report, actor)) {
+                throw new SecurityException("본인 신고만 삭제할 수 있습니다.");
+            }
+            // 공개된 물품까지 지워지지 않도록 일반 사용자는 검수 전 신고만 삭제
+            if (report.getStatus() != ReportStatus.PENDING) {
+                throw new SecurityException("검수가 끝난 신고는 관리자에게 삭제를 요청해 주세요.");
+            }
+        }
         if (report.getStatus() == ReportStatus.PICKED_UP) {
             throw new IllegalStateException("최종 수령 완료된 신고는 삭제할 수 없습니다.");
         }
         lostItemService.deleteByReportId(id);
+        s3Service.deleteByUrlIfPresent(report.getImage());
         reportRepository.deleteById(id);
     }
 

@@ -11,6 +11,8 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
+import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -36,16 +38,29 @@ public class S3Service {
                 .build();
     }
 
+    /** 업로드 허용 형식 → 확장자. 사진 외 파일(HTML·SVG 등)은 받지 않는다. */
+    private static final Map<String, String> IMAGE_TYPES = Map.of(
+            "image/jpeg", "jpg",
+            "image/jpg", "jpg",
+            "image/png", "png",
+            "image/webp", "webp",
+            "image/gif", "gif",
+            "image/heic", "heic",
+            "image/heif", "heif"
+    );
+
     public String upload(MultipartFile file) throws IOException {
-        String original = file.getOriginalFilename();
-        String filename = (original == null || original.isBlank()) ? "upload.bin" : original;
-        return uploadBytes(file.getBytes(), file.getContentType(), filename);
+        return uploadBytes(file.getBytes(), file.getContentType(), file.getOriginalFilename());
     }
 
+    /** filename은 받지만 S3 키에 쓰지 않는다 (원본 파일명에 이름·학번이 들어갈 수 있음). */
     public String uploadBytes(byte[] bytes, String contentType, String filename) {
-        String safeName = (filename == null || filename.isBlank()) ? "upload.bin" : filename;
-        String key = "lost-items/" + UUID.randomUUID() + "_" + safeName;
-        String resolvedType = (contentType == null || contentType.isBlank()) ? "application/octet-stream" : contentType;
+        String resolvedType = contentType == null ? "" : contentType.trim().toLowerCase(Locale.ROOT);
+        String ext = IMAGE_TYPES.get(resolvedType);
+        if (ext == null) {
+            throw new IllegalArgumentException("사진 파일(JPG, PNG, WEBP, GIF, HEIC)만 업로드할 수 있습니다.");
+        }
+        String key = "lost-items/" + UUID.randomUUID() + "." + ext;
 
         s3Client.putObject(
                 PutObjectRequest.builder()

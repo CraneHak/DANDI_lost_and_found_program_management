@@ -206,6 +206,85 @@ class AuthSecurityIntegrationTest {
                 .andExpect(jsonPath("$.profileCompleted").value(true));
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "PATCH /api/reports/1/status",
+            "PATCH /api/reports/1",
+            "PUT /api/reports/1",
+            "POST /api/lost-items",
+            "PATCH /api/lost-items/1",
+            "DELETE /api/lost-items/1",
+            "POST /api/uploads"
+    })
+    void nonAdminCannotUseAdminOnlyEndpoints(String endpoint) throws Exception {
+        when(firebaseTokenVerifier.verify(anyString()))
+                .thenReturn(new DecodedFirebaseUser("uid-student", "student@dankook.ac.kr", true));
+        String[] parts = endpoint.split(" ");
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .request(org.springframework.http.HttpMethod.valueOf(parts[0]), parts[1])
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer valid-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"resolved\",\"itemName\":\"x\"}"))
+                .andExpect(status().isForbidden());
+        verify(lostItemService, never()).delete(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void nonAdminSeesOnlyOwnReports() throws Exception {
+        when(firebaseTokenVerifier.verify(anyString()))
+                .thenReturn(new DecodedFirebaseUser("uid-me", "me@dankook.ac.kr", true));
+        org.example.report.Report mine = new org.example.report.Report();
+        mine.setItemName("mine");
+        mine.setReporterUid("uid-me");
+        org.example.report.Report other = new org.example.report.Report();
+        other.setItemName("other");
+        other.setReporterUid("uid-other");
+        other.setReporterEmail("other@dankook.ac.kr");
+        when(reportRepository.findAllByOrderByCreatedAtDesc()).thenReturn(java.util.List.of(mine, other));
+
+        mockMvc.perform(get("/api/reports").header(HttpHeaders.AUTHORIZATION, "Bearer valid-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].itemName").value("mine"));
+    }
+
+    @Test
+    void nonAdminCannotDeleteSomeoneElsesReport() throws Exception {
+        when(firebaseTokenVerifier.verify(anyString()))
+                .thenReturn(new DecodedFirebaseUser("uid-me", "me@dankook.ac.kr", true));
+        org.example.report.Report other = new org.example.report.Report();
+        other.setItemName("other");
+        other.setReporterUid("uid-other");
+        other.setStatus(org.example.report.ReportStatus.PENDING);
+        when(reportRepository.findById(5L)).thenReturn(java.util.Optional.of(other));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/reports/5")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer valid-token"))
+                .andExpect(status().isForbidden());
+        verify(reportRepository, never()).deleteById(5L);
+    }
+
+    @Test
+    void visionOriginalFolderIsNotServedButMosaicIs() throws Exception {
+        java.nio.file.Path original = java.nio.file.Path.of("uploads", "vision", "original", "test-original.png");
+        java.nio.file.Path mosaic = java.nio.file.Path.of("uploads", "vision", "mosaic", "test-mosaic.png");
+        java.nio.file.Files.createDirectories(original.getParent());
+        java.nio.file.Files.createDirectories(mosaic.getParent());
+        java.nio.file.Files.write(original, new byte[]{1, 2, 3});
+        java.nio.file.Files.write(mosaic, new byte[]{1, 2, 3});
+        try {
+            mockMvc.perform(get("/files/vision/original/test-original.png"))
+                    .andExpect(status().isNotFound());
+            mockMvc.perform(get("/uploads/vision/original/test-original.png"))
+                    .andExpect(status().isNotFound());
+            mockMvc.perform(get("/files/vision/mosaic/test-mosaic.png"))
+                    .andExpect(status().isOk());
+        } finally {
+            java.nio.file.Files.deleteIfExists(original);
+            java.nio.file.Files.deleteIfExists(mosaic);
+        }
+    }
+
     @Test
     void legacyProfileWithoutStudentNumberNeedsOnboarding() throws Exception {
         when(firebaseTokenVerifier.verify(anyString()))
