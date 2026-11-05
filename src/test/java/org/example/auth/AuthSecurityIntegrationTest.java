@@ -257,6 +257,24 @@ class AuthSecurityIntegrationTest {
         verify(userProfileService, never()).promoteToAdmin(org.mockito.ArgumentMatchers.any());
     }
 
+    @Test
+    void visionOriginalFolderIsNotServedButMosaicIs() throws Exception {
+        java.nio.file.Path original = java.nio.file.Path.of("uploads", "vision", "original", "test-original.png");
+        java.nio.file.Path mosaic = java.nio.file.Path.of("uploads", "vision", "mosaic", "test-mosaic.png");
+        java.nio.file.Files.createDirectories(original.getParent());
+        java.nio.file.Files.createDirectories(mosaic.getParent());
+        java.nio.file.Files.write(original, new byte[]{1, 2, 3});
+        java.nio.file.Files.write(mosaic, new byte[]{1, 2, 3});
+        try {
+            mockMvc.perform(get("/files/vision/original/test-original.png")).andExpect(status().isNotFound());
+            mockMvc.perform(get("/uploads/vision/original/test-original.png")).andExpect(status().isNotFound());
+            mockMvc.perform(get("/files/vision/mosaic/test-mosaic.png")).andExpect(status().isOk());
+        } finally {
+            java.nio.file.Files.deleteIfExists(original);
+            java.nio.file.Files.deleteIfExists(mosaic);
+        }
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"/api/admin/action-logs", "/api/admin/pickup-passes"})
     void studentsCannotReadAdminLists(String path) throws Exception {

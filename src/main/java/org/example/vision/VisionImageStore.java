@@ -12,16 +12,20 @@ import java.util.UUID;
 public class VisionImageStore {
     private final Path root = Path.of("uploads", "vision");
 
-    public String saveOriginal(byte[] bytes, String extension) throws IOException {
-        return save(bytes, "original", extension);
-    }
-
     public String saveMosaic(byte[] bytes, String extension) throws IOException {
         return save(bytes, "mosaic", extension);
     }
 
+    /** 모자이크만 공개 경로로 서빙된다. 예전 원본 경로나 빈 값은 URL을 만들지 않는다. */
     public String toPublicUrl(String relativePath) {
-        return "/files/" + relativePath.replace('\\', '/');
+        if (relativePath == null || relativePath.isBlank()) {
+            return null;
+        }
+        String normalized = relativePath.replace('\\', '/');
+        if (!normalized.startsWith("vision/mosaic/")) {
+            return null;
+        }
+        return "/files/" + normalized;
     }
 
     private String save(byte[] bytes, String folder, String extension) throws IOException {
