@@ -26,6 +26,12 @@ public class UserProfileService {
     }
 
     @Transactional
+    public UserProfile promoteToAdmin(UserProfile userProfile) {
+        userProfile.setRole(UserRole.ROLE_ADMIN);
+        return userProfileRepository.save(userProfile);
+    }
+
+    @Transactional
     public UserProfile updateProfile(String uid, String email, String name, String department, String studentId) {
         UserProfile userProfile = findOrCreate(uid, email);
         userProfile.setName(name != null ? name.trim() : null);

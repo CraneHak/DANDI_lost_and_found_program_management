@@ -44,6 +44,11 @@ public class AuthController {
     ) {
         FirebaseAuthenticationToken token = requireFirebaseToken(authentication);
         UserProfile userProfile = userProfileService.findOrCreate(token.getUid(), token.getEmail());
+        // 설정 파일(FIREBASE_ADMIN_EMAILS)에 있는 관리자는 로그인할 때 DB role도 관리자로 올린다.
+        // 내리는 건 자동으로 하지 않는다 — 관리자 해제는 DB role을 ROLE_USER로 바꿔서 한다.
+        if (userProfile.getRole() != UserRole.ROLE_ADMIN && isConfigAdminEmail(token.getEmail())) {
+            userProfile = userProfileService.promoteToAdmin(userProfile);
+        }
         String accessToken = resolveAccessToken(request, body);
         boolean admin = resolveAdmin(token, userProfile);
         return toResponse(token, userProfile, accessToken, admin);
@@ -111,7 +116,10 @@ public class AuthController {
         if (userProfile.getRole() == UserRole.ROLE_ADMIN) {
             return true;
         }
-        String email = token.getEmail();
+        return isConfigAdminEmail(token.getEmail());
+    }
+
+    private boolean isConfigAdminEmail(String email) {
         if (email == null) {
             return false;
         }

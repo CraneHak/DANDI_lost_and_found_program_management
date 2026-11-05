@@ -46,6 +46,13 @@ class UserProfileServiceTest {
         assertFalse(profile.isProfileCompleted());
     }
 
+    @Test void promoteToAdminSavesAdminRole() {
+        UserProfile profile = existingProfile();
+        service.promoteToAdmin(profile);
+        assertEquals(UserRole.ROLE_ADMIN, profile.getRole());
+        verify(repository).save(profile);
+    }
+
     @Test void lifecycleCompletionRequiresAllThreeProfileFields() {
         UserProfile profile = new UserProfile();
         profile.setName("Name");

@@ -24,7 +24,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
+@SpringBootTest(properties = "firebase.admin-emails=boss@dankook.ac.kr")
 @AutoConfigureMockMvc
 class AuthSecurityIntegrationTest {
     @Autowired
@@ -204,6 +204,56 @@ class AuthSecurityIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.studentId").value("20261234"))
                 .andExpect(jsonPath("$.profileCompleted").value(true));
+    }
+
+    @Test
+    void configAdminIsPromotedInDbOnLogin() throws Exception {
+        when(firebaseTokenVerifier.verify(anyString()))
+                .thenReturn(new DecodedFirebaseUser("uid-boss", "Boss@dankook.ac.kr", true));
+        UserProfile profile = new UserProfile();
+        profile.setFirebaseUid("uid-boss");
+        profile.setEmail("Boss@dankook.ac.kr");
+        when(userProfileService.findOrCreate("uid-boss", "Boss@dankook.ac.kr")).thenReturn(profile);
+        when(userProfileService.promoteToAdmin(profile)).thenAnswer(call -> {
+            profile.setRole(UserRole.ROLE_ADMIN);
+            return profile;
+        });
+
+        mockMvc.perform(post("/api/auth/login").header(HttpHeaders.AUTHORIZATION, "Bearer valid-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isAdmin").value(true));
+        verify(userProfileService).promoteToAdmin(profile);
+    }
+
+    @Test
+    void nonConfigUserIsNotPromotedOnLogin() throws Exception {
+        when(firebaseTokenVerifier.verify(anyString()))
+                .thenReturn(new DecodedFirebaseUser("uid-student", "student@dankook.ac.kr", true));
+        UserProfile profile = new UserProfile();
+        profile.setFirebaseUid("uid-student");
+        profile.setEmail("student@dankook.ac.kr");
+        when(userProfileService.findOrCreate("uid-student", "student@dankook.ac.kr")).thenReturn(profile);
+
+        mockMvc.perform(post("/api/auth/login").header(HttpHeaders.AUTHORIZATION, "Bearer valid-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isAdmin").value(false));
+        verify(userProfileService, never()).promoteToAdmin(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void existingDbAdminIsNotPromotedAgain() throws Exception {
+        when(firebaseTokenVerifier.verify(anyString()))
+                .thenReturn(new DecodedFirebaseUser("uid-boss", "boss@dankook.ac.kr", true));
+        UserProfile profile = new UserProfile();
+        profile.setFirebaseUid("uid-boss");
+        profile.setEmail("boss@dankook.ac.kr");
+        profile.setRole(UserRole.ROLE_ADMIN);
+        when(userProfileService.findOrCreate("uid-boss", "boss@dankook.ac.kr")).thenReturn(profile);
+
+        mockMvc.perform(post("/api/auth/login").header(HttpHeaders.AUTHORIZATION, "Bearer valid-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isAdmin").value(true));
+        verify(userProfileService, never()).promoteToAdmin(org.mockito.ArgumentMatchers.any());
     }
 
     @Test
