@@ -6,6 +6,7 @@ Spring Boot 3.4 · Java 17 · Gradle. 운영 서버: https://api.dandilost.life 
 - `.github/workflows/deploy.yml`이 테스트 → 빌드 → EC2 교체 → 헬스체크까지 자동으로 한다. 헬스체크가 실패하면 이전 버전으로 자동 롤백된다.
 - 푸시 전에 반드시 `./gradlew clean test bootJar`가 로컬에서 통과해야 한다. 테스트가 실패하면 배포되지 않는다.
 - 결과는 GitHub 저장소의 Actions 탭에서 확인한다. 빨간색이면 운영은 이전 버전 그대로다.
+- 저장소가 공개라 Actions 로그도 공개다. 로그에 비밀값이 찍히는 코드를 넣지 않는다. 기동 실패 원인은 서버의 `~/dandi/last-deploy-fail.log`에만 남는다(관리자에게 요청).
 - 수동 재배포: Actions → "백엔드 배포" → Run workflow.
 
 ## DB 표/칸을 바꾸는 변경은 먼저 알린다
