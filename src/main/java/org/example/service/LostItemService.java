@@ -1,6 +1,7 @@
 package org.example.service;
 
 import org.example.common.ImageUrlService;
+import org.example.common.SensitiveImagePolicy;
 import org.example.controller.CreateLostItemRequest;
 import org.example.controller.UpdateLostItemRequest;
 import org.example.entity.ItemStatus;
@@ -123,6 +124,16 @@ public class LostItemService {
 
         item.setItemName(resolvedName);
         String type = resolveItemType(itemType, category);
+        // 신분증·카드는 모자이크 사진만 공개할 수 있다. S3 업로드 전에 먼저 검사한다.
+        String effectiveType = type != null ? type : item.getItemType();
+        String urlCandidate = firstNonBlank(imageUrl, mosaicImageUrl, photoUrl, imageField);
+        if ((imagePart != null && !imagePart.isEmpty()) || (filePart != null && !filePart.isEmpty())) {
+            SensitiveImagePolicy.rejectRawUpload(effectiveType);
+        } else if (urlCandidate != null) {
+            SensitiveImagePolicy.requireMasked(effectiveType, urlCandidate);
+        } else {
+            SensitiveImagePolicy.requireMasked(effectiveType, item.getImageUrl());
+        }
         if (type != null) {
             item.setItemType(type);
         }
@@ -172,6 +183,12 @@ public class LostItemService {
             item.setReportId(request.reportId());
         }
         boolean wasPublic = isPublic(item);
+        // 신분증·카드는 모자이크 사진만 공개할 수 있다. 사진 업로드 전에 먼저 검사한다.
+        String requestType = resolveItemType(request.itemType(), request.category());
+        String requestImage = request.resolvedImage();
+        SensitiveImagePolicy.requireMasked(
+                requestType != null ? requestType : item.getItemType(),
+                requestImage != null ? requestImage : item.getImageUrl());
         applyRequest(item, request);
         if (!wasPublic) {
             item.setStatus(ItemStatus.ACQUIRED);
@@ -181,6 +198,8 @@ public class LostItemService {
 
     @Transactional
     public LostItem upsertFromReport(Report report) {
+        // 승인 경로의 마지막 안전장치. 신분증·카드는 모자이크 사진만 공개할 수 있다.
+        SensitiveImagePolicy.requireMasked(report.getCategory(), report.getImage());
         LostItem item = repository.findByReportId(report.getId()).orElseGet(LostItem::new);
         boolean wasPublic = isPublic(item);
         item.setReportId(report.getId());
@@ -203,6 +222,14 @@ public class LostItemService {
     @Transactional
     public LostItem update(Integer id, UpdateLostItemRequest request) {
         LostItem item = findById(id);
+        // 사진이 실제로 바뀔 때만 검사한다. 같은 사진을 다시 보낸 수정(위치·이름 등)은 막지 않는다.
+        if (request.image() != null && !request.image().isBlank()
+                && !SensitiveImagePolicy.sameImage(request.image(), item.getImageUrl())) {
+            String patchTypeForCheck = resolveItemType(request.itemType(), request.category());
+            SensitiveImagePolicy.requireMasked(
+                    patchTypeForCheck != null ? patchTypeForCheck : item.getItemType(),
+                    request.image());
+        }
         if (request.name() != null || request.itemName() != null) {
             String name = request.name() != null && !request.name().isBlank()
                     ? request.name().trim()

@@ -2,6 +2,7 @@ package org.example.report;
 
 import org.example.adminlog.AdminActionLogService;
 import org.example.common.ImageUrlService;
+import org.example.common.SensitiveImagePolicy;
 import org.example.entity.ItemStatus;
 import org.example.entity.LostItem;
 import org.example.notice.NoticeService;
@@ -194,6 +195,10 @@ public class ReportService {
         Report report = reportRepository.findById(id)
                 .orElseThrow(() -> new ReportNotFoundException(id));
         validateStatusTransition(report.getStatus(), newStatus);
+        if (newStatus == ReportStatus.RESOLVED) {
+            // 신분증·카드는 모자이크 사진만 공개할 수 있다. 상태를 바꾸기 전에 막아 아무것도 반영하지 않는다.
+            SensitiveImagePolicy.requireMasked(report.getCategory(), report.getImage());
+        }
         report.setStatus(newStatus);
         if (newStatus == ReportStatus.PICKED_UP) {
             report.setPickedUpAt(LocalDateTime.now());
