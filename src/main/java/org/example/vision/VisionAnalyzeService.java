@@ -4,6 +4,7 @@ import org.example.common.ApiTime;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.example.service.S3Service;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ public class VisionAnalyzeService {
     private final VisionImageStore visionImageStore;
     private final ObjectMapper objectMapper;
     private final ObjectProvider<LostItemAnalysisRepository> repositoryProvider;
+    private final S3Service s3Service;
 
     public VisionAnalyzeService(
             VisionClient visionClient,
@@ -30,7 +32,8 @@ public class VisionAnalyzeService {
             ImageMosaicService imageMosaicService,
             VisionImageStore visionImageStore,
             ObjectMapper objectMapper,
-            ObjectProvider<LostItemAnalysisRepository> repositoryProvider
+            ObjectProvider<LostItemAnalysisRepository> repositoryProvider,
+            S3Service s3Service
     ) {
         this.visionClient = visionClient;
         this.visionMaskingService = visionMaskingService;
@@ -38,6 +41,7 @@ public class VisionAnalyzeService {
         this.visionImageStore = visionImageStore;
         this.objectMapper = objectMapper;
         this.repositoryProvider = repositoryProvider;
+        this.s3Service = s3Service;
     }
 
     public VisionAnalyzeResponse analyze(MultipartFile image, DocumentType documentType) throws IOException {
@@ -48,9 +52,16 @@ public class VisionAnalyzeService {
             throw new IllegalArgumentException("Only image files are allowed.");
         }
 
-        byte[] imageBytes = image.getBytes();
-        String extension = detectExtension(image);
+        return analyzeBytes(image.getBytes(), detectExtension(image), documentType);
+    }
 
+    /** 이미 서버에 올라간 신고 사진을 읽어서 분석한다 (관리자가 사진을 다시 고르지 않아도 되게). */
+    public VisionAnalyzeResponse analyzeStoredImage(String imageUrl, DocumentType documentType) throws IOException {
+        byte[] imageBytes = s3Service.downloadByUrl(imageUrl);
+        return analyzeBytes(imageBytes, S3Service.detectImageExtension(imageBytes), documentType);
+    }
+
+    private VisionAnalyzeResponse analyzeBytes(byte[] imageBytes, String extension, DocumentType documentType) throws IOException {
         VisionAnalysisResult analysisResult = visionClient.analyze(imageBytes, documentType.requiresOcr());
         MaskedOcrResult maskedOcrResult = visionMaskingService.apply(documentType, analysisResult);
 
