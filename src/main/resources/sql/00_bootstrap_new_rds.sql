@@ -1,5 +1,5 @@
 -- DANDI 신규 RDS 부트스트랩
--- 엔티티 + sql/*.sql + migrate-lost-item-stored-date-datetime.sql 통합
+-- 엔티티 + sql/*.sql + migrations/migrate-lost-item-stored-date-datetime.sql 통합
 -- 실행: mysql -h <RDS_ENDPOINT> -u dandi -p dandidb < 00_bootstrap_new_rds.sql
 
 SET NAMES utf8mb4;
