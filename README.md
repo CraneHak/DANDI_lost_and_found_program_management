@@ -6,7 +6,7 @@
 
 | 구분 | 링크 |
 |------|------|
-| 서비스 | https://www.dandilost.life (임시 운영 2026-11-06 ~ 2026-11-20) |
+| 서비스 | https://www.dandilost.life (임시 운영 2026-11-06 ~ 2026-12-20) |
 | 프론트엔드 | https://github.com/hprays/DANDI-lost-and-found-program |
 | 결과 보고서 · 포스터 · 시연 영상 | (제출 전 링크 추가) |
 
