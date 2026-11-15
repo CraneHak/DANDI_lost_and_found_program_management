@@ -52,8 +52,14 @@ class NoticeServiceTest {
 
     @Test void configFileAdminsDoNotGetRegularNotices() {
         profile("u-config", "Config-Admin@dankook.ac.kr", UserRole.ROLE_USER);
-        assertNull(service.create("u-config", "관심 키워드 알림", "msg"));
+        assertNull(service.create("u-config", "습득 완료", "msg"));
         verify(notices, never()).save(any());
+    }
+
+    @Test void keywordAlertsReachAdminsToo() {
+        profile("u-admin", "admin@dankook.ac.kr", UserRole.ROLE_ADMIN);
+        assertNotNull(service.createKeywordAlert("u-admin", "관심 키워드 알림", "msg"));
+        verify(notices).save(argThat(n -> "u-admin".equals(n.getRequesterUid())));
     }
 
     @Test void newReportNoticeGoesToEveryAdminOnly() {

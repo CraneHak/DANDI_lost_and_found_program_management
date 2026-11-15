@@ -44,7 +44,20 @@ class KeywordAlertServiceTest {
 
         service.notifyMatchingUsers(item);
 
-        verify(notices).create(eq("u-on"), eq("관심 키워드 알림"), any());
-        verify(notices, never()).create(eq("u-off"), any(), any());
+        verify(notices).createKeywordAlert(eq("u-on"), eq("관심 키워드 알림"), any());
+        verify(notices, never()).createKeywordAlert(eq("u-off"), any(), any());
+    }
+
+    // 관리자 계정도 같은 경로로 알림을 받는다 (관리자 제외 규칙은 일반 create()에만 있다)
+    @Test void newlyPublishedItemAlertsAdminKeywordOwnersToo() {
+        when(keywords.findAll()).thenReturn(List.of(keyword("u-admin", "마우스")));
+        LostItem item = new LostItem();
+        item.setItemName("무선 마우스");
+        item.setStatus(ItemStatus.ACQUIRED);
+
+        service.notifyMatchingUsers(item);
+
+        verify(notices).createKeywordAlert(eq("u-admin"), eq("관심 키워드 알림"), any());
+        verify(notices, never()).create(any(), any(), any());
     }
 }

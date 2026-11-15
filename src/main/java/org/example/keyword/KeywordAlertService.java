@@ -61,7 +61,7 @@ public class KeywordAlertService {
             if (!enabled) {
                 continue;
             }
-            noticeService.create(
+            noticeService.createKeywordAlert(
                     uid,
                     "관심 키워드 알림",
                     "설정하신 관심 키워드와 일치하는 습득물이 등록되었습니다.\n\n"

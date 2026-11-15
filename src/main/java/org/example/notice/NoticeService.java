@@ -37,6 +37,17 @@ public class NoticeService {
         return save(requesterUid, title, message);
     }
 
+    /**
+     * 관심 키워드 알림. 일반 알림과 달리 관리자도 받는다 (관리자 계정으로도 키워드 알림을 확인할 수 있어야 함).
+     */
+    @Transactional
+    public Notice createKeywordAlert(String requesterUid, String title, String message) {
+        if (requesterUid == null || requesterUid.isBlank()) {
+            throw new IllegalArgumentException("requesterUid is required.");
+        }
+        return save(requesterUid, title, message);
+    }
+
     /** 관리자 전원에게 보내는 알림 (새 신고 접수용) */
     @Transactional
     public void notifyAdmins(String title, String message) {
