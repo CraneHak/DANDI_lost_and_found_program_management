@@ -107,7 +107,7 @@ cp .env.example .env     # DB, AWS, Firebase, Vision, LLM 값을 채웁니다
 
 <p align="center">
   <a href="docs/DANDI_단디팀_포스터.pdf">
-    <img src="docs/poster.png" alt="DANDI 포스터" width="700">
+    <img src="docs/DANDI_단디팀_포스터.pdf" alt="DANDI 포스터" width="700">
   </a>
 </p>
 
