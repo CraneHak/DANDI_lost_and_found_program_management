@@ -100,3 +100,20 @@ cp .env.example .env     # DB, AWS, Firebase, Vision, LLM 값을 채웁니다
 ```
 
 테스트와 빌드: `./gradlew clean test bootJar` (Java 17)
+
+---
+
+## 프로젝트 자료
+
+<p align="center">
+  <a href="docs/DANDI_단디팀_포스터.pdf">
+    <img src="docs/poster.png" alt="DANDI 포스터" width="700">
+  </a>
+</p>
+
+<p align="center">
+  <a href="docs/DANDI_단디팀_프로젝트_결과보고서.pdf">결과보고서</a> ·
+  <a href="docs/DANDI_단디팀_발표자료.pdf">발표자료</a> ·
+  <a href="docs/DANDI_단디팀_포스터.pdf">포스터 PDF</a> ·
+  <a href="https://www.youtube.com/watch?v=NSqHle27GWg">시연 영상</a>
+</p>
