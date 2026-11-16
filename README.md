@@ -8,9 +8,10 @@
 |------|------|
 | 서비스 | https://www.dandilost.life (임시 운영 2026-11-06 ~ 2026-12-20) |
 | 프론트엔드 | https://github.com/hprays/DANDI-lost-and-found-program |
-| 결과 보고서 |  |
-| 포스터 |  |
-| 시연 영상 |   | 
+| 결과 보고서 | docs/DANDI_단디팀_프로젝트_결과보고서 |
+| 포스터 | docs/DANDI_단디팀_포스터 |
+| 시연 영상 | youtube.com/watch?v=NSqHle27GWg&feature=youtu.be |
+| 발표 자료 | docs/DANDI_단디팀_발표자료 |
 
 팀: 이정우(32213459) · 이지학(32213564) · 한산(32214796) — 단국대학교 소프트웨어학과
 
