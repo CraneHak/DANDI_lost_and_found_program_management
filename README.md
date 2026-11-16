@@ -16,13 +16,13 @@
 
 ---
 
-## System Architecture
+## 시스템 아키텍쳐
 
 ![System Architecture](docs/architecture.png)
 
 ---
 
-## Tech Stack
+## 기술 스택
 
 ![Java](https://img.shields.io/badge/Java_17-ED8B00?style=flat-square&logo=openjdk&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot_3.4-6DB33F?style=flat-square&logo=springboot&logoColor=white)
@@ -37,7 +37,7 @@
 
 ---
 
-## Key Features
+## 핵심 기능
 
 ### 1. 신고 → 검수 → 공개
 - 학생 신고는 `pending`으로 접수하고, 관리자가 사진과 습득 정보를 확인한 뒤 공개 물품으로 연결
