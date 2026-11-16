@@ -8,7 +8,9 @@
 |------|------|
 | 서비스 | https://www.dandilost.life (임시 운영 2026-11-06 ~ 2026-12-20) |
 | 프론트엔드 | https://github.com/hprays/DANDI-lost-and-found-program |
-| 결과 보고서 · 포스터 · 시연 영상 | (제출 전 링크 추가) |
+| 결과 보고서 |  |
+| 포스터 |  |
+| 시연 영상 |   | 
 
 팀: 이정우(32213459) · 이지학(32213564) · 한산(32214796) — 단국대학교 소프트웨어학과
 
@@ -61,7 +63,7 @@
 
 ---
 
-## Trouble Shooting
+## 트러블슈팅
 
 운영 전 점검과 실제 사용 중에 겪은 문제입니다.
 
@@ -87,7 +89,7 @@
 
 ---
 
-## Getting Started
+## 로컬 사용법
 
 ```bash
 git clone https://github.com/CraneHak/DANDI_lost_and_found_program_management.git
