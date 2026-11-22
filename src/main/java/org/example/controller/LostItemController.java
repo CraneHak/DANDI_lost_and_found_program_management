@@ -140,7 +140,7 @@ public class LostItemController {
                         + (saved.getFoundLocation() != null ? " (" + saved.getFoundLocation() + ")" : ""));
     }
 
-    // ponytail: 물품 저장과 별도 트랜잭션으로 남긴다. 저장 직후 기록이 실패해도 물품은 남는다.
+    // 물품 저장과 별도 트랜잭션으로 남김(저장 직후 기록이 실패해도 물품은 남음)
     private void log(Authentication authentication, String action, LostItem item, String message) {
         if (!(authentication instanceof FirebaseAuthenticationToken token) || !token.isAdmin()) {
             return;
