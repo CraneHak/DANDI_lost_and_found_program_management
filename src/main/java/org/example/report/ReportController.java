@@ -5,6 +5,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.example.auth.FirebaseAuthenticationToken;
+import org.example.auth.UserProfile;
+import org.example.auth.UserProfileRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -14,24 +16,54 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/reports")
 public class ReportController {
 
     private final ReportService reportService;
+    private final UserProfileRepository userProfileRepository;
 
-    public ReportController(ReportService reportService) {
+    public ReportController(ReportService reportService, UserProfileRepository userProfileRepository) {
         this.reportService = reportService;
+        this.userProfileRepository = userProfileRepository;
     }
 
     @GetMapping
     public List<ReportResponse> getAll(Authentication authentication) {
-        return reportService.findAllVisibleTo(requireActor(authentication)).stream()
-                .map(ReportResponse::from)
+        List<Report> reports = reportService.findAllVisibleTo(requireActor(authentication));
+        Map<String, String> names = ownerNames(reports);
+        return reports.stream()
+                .map(r -> ReportResponse.from(r, names.get(emailKey(r.getReporterEmail()))))
                 .toList();
+    }
+
+    /** 신고자 이메일 -> 프로필 이름 (이름을 저장한 사용자만) */
+    private Map<String, String> ownerNames(List<Report> reports) {
+        List<String> emails = reports.stream()
+                .map(Report::getReporterEmail)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<String, String> names = new HashMap<>();
+        if (emails.isEmpty()) {
+            return names;
+        }
+        for (UserProfile profile : userProfileRepository.findByEmailIn(emails)) {
+            String name = profile.getName();
+            if (name != null && !name.isBlank()) {
+                names.putIfAbsent(emailKey(profile.getEmail()), name.trim());
+            }
+        }
+        return names;
+    }
+
+    private static String emailKey(String email) {
+        return email == null ? "" : email.trim().toLowerCase();
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -246,6 +278,10 @@ public class ReportController {
     ) {
 
         static ReportResponse from(Report r) {
+            return from(r, null);
+        }
+
+        static ReportResponse from(Report r, String ownerName) {
             String image = r.getImage();
             return new ReportResponse(
                     String.valueOf(r.getId()),
@@ -265,7 +301,7 @@ public class ReportController {
                     ApiTime.utc(r.getCreatedAt()),
                     ApiTime.utc(r.getPickedUpAt()),
                     r.getReporterEmail(),
-                    null
+                    ownerName
             );
         }
     }
