@@ -71,7 +71,7 @@ public class VisionAnalyzeService {
             byte[] mosaicBytes = imageMosaicService.mosaic(imageBytes, maskedOcrResult.sensitiveBoxes(), extension);
             mosaicPath = visionImageStore.saveMosaic(mosaicBytes, extension);
         }
-        // ponytail: original_image_path가 NOT NULL이라 DDL 없이 빈 값을 기록. 컬럼을 nullable로 바꾸면 null로.
+        // original_image_path가 NOT NULL이라 DDL 없이 빈 값을 기록(컬럼을 nullable로 바꾸면 null로)
         String originalPath = "";
 
         LostItemAnalysisRecord saved = saveRecord(documentType, analysisResult, maskedOcrResult, originalPath, mosaicPath)
