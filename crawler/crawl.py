@@ -140,7 +140,7 @@ def normalize_date(raw):
                 year, month, day = 2000 + int(m.group(1)), int(m.group(2)), int(m.group(3))
             else:
                 year, month, day = int(m.group(1)), int(m.group(2)), int(m.group(3))
-            # ponytail: 미래 날짜는 게시글 연도 오타로 보고 1년 당김 (예: 2027.05.29 → 2026.05.29)
+            # 미래 날짜는 게시글 연도 오타로 보고 1년 당김 (예: 2027.05.29 → 2026.05.29)
             if (year, month, day) > date.today().timetuple()[:3]:
                 year -= 1
             return f"{year}-{month:02d}-{day:02d}"
