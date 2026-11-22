@@ -36,7 +36,7 @@ public class AdminDirectory {
     /** 알림을 받을 수 있는 관리자 UID (로그인한 적 없는 관리자는 UID가 없어 빠진다) */
     public Set<String> adminUids() {
         Set<String> uids = new LinkedHashSet<>(firebaseProperties.getAdminUids());
-        // ponytail: 사용자 수가 적어 전체 조회 후 거른다. 사용자가 많아지면 role/email 조건 조회로.
+        // 사용자 수가 적어 전체 조회 후 거름(사용자가 많아지면 role/email 조건 조회로.)
         for (UserProfile profile : userProfileRepository.findAll()) {
             if (isAdminProfile(profile)) {
                 uids.add(profile.getFirebaseUid());
